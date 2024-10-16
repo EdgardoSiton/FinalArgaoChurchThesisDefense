@@ -57,7 +57,15 @@ $pendingAppointments = $citizenController->getPendingCitizens(null, $regId);
     <link rel="stylesheet" href="assets/css/demo.css" />
   </head>
   <body>
-  <?php require_once 'header.php'?>
+  <div class="container-fluid nav-bar px-0 px-lg-4 py-lg-0">
+      <div class="container">
+       
+      <?php require_once 'header.php'?>
+
+      </div>
+    </div>
+    <!-- Navbar & Hero End -->
+    
   <?php require_once 'profheader.php'?>
 
         <div class="container">
