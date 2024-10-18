@@ -329,14 +329,42 @@ class Priest {
             df.priest_id = ?
             AND df.pr_status = 'Approved'
             AND DATE(s.date) = ?
+            
+
+            UNION ALL
         
-        ORDER BY schedule_date ASC
+            SELECT 
+             
+                rf.req_id AS id,
+                rf.role AS roles,
+                rf.req_category AS Event_Name,
+                c.fullname AS citizen_name,
+                s.date AS schedule_date,
+                s.start_time AS schedule_time,
+                s.end_time AS schedule_end_time,
+                rf.priest_id,
+                priest.fullname AS priest_name
+               
+               
+            FROM 
+                schedule s
+                LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
+                JOIN req_form rf ON s.schedule_id = rf.schedule_id
+    
+                LEFT JOIN citizen priest ON rf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            WHERE 
+                rf.priest_id = ?
+                AND rf.pr_status = 'Approved'
+                AND DATE(s.date) = ?
+                
+        
+                ORDER BY schedule_date ASC, schedule_time ASC
         ";
         
         // Prepare and execute the statement
         $stmt = $this->conn->prepare($sql);
         // Bind priest_id and date (four times each, for each UNION)
-        $stmt->bind_param("isisisis", $priestId, $date, $priestId, $date, $priestId, $date, $priestId, $date);
+        $stmt->bind_param("isisisisis", $priestId, $date, $priestId, $date, $priestId, $date, $priestId, $date,$priestId, $date);
         $stmt->execute();
         $result = $stmt->get_result();
     

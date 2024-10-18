@@ -228,7 +228,7 @@ We invite you to check back regularly to stay updated on the vibrant life of our
             <div class="service-content-inner">
               <a href="#" class="d-inline-block h4 mb-4"><span style="font-weight: bold">Request of Masses</span></a>
               <p class="mb-4">The Catholic Church, as an esteemed institution, upholds the tradition of conducting Eucharistic celebrations...</p>
-              <a class="btn btn-primary rounded-pill py-2 px-4" href="FillScheduleForm.php?type=RequestForm">See More</a>
+              <a class="btn btn-primary rounded-pill py-2 px-4" href="FillRequestChoice.php">See More</a>
             </div>
           </div>
         </div>

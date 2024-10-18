@@ -61,6 +61,14 @@ $pendingItems = $staff->getMassPendingCitizen();
                   <div class="card-header">
                     <h4 class="card-title">Sponsored Event Citizen Details (Mass Event)</h4>
                   </div>
+                  <form method="GET" action="StaffMassSched.php">
+             
+             <h6><select id="event_filter" name="event_filter" onchange="this.form.submit()">
+                     <option value="">All</option>
+                     <option value="MassBaptism" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'MassBaptism') ? 'selected' : ''; ?>>MassBaptism</option>
+                     <option value="MassWedding" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'MassWedding') ? 'selected' : ''; ?>>MassWedding</option>
+                     <option value="MassConfirmation" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'MassConfirmation') ? 'selected' : ''; ?>>MassConfirmation</option>
+                 </select>
                   <div class="card-body">
                     <div class="table-responsive">
                       <table
@@ -82,8 +90,16 @@ $pendingItems = $staff->getMassPendingCitizen();
                         </thead>
                         <tfoot>
                         <tbody>
-                <?php if (isset($pendingItems) && !empty($pendingItems)): ?>
-                    <?php foreach ($pendingItems as $index => $item): ?>
+                        <?php
+                                    // Retrieve the selected event type from the GET request
+                                    $eventFilter = isset($_GET['event_filter']) ? $_GET['event_filter'] : '';
+
+                                    // Filter pending items based on the selected event type
+                                    if (isset($pendingItems) && !empty($pendingItems)) {
+                                        foreach ($pendingItems as $index => $item) {
+                                            // Check if the event name matches the selected filter or if no filter is applied
+                                            if ($eventFilter === '' || $item['event_name'] === $eventFilter) {
+                                    ?>
                         <tr>
                             <td><?php echo htmlspecialchars($index + 1); ?></td>
                             <td><?php echo htmlspecialchars($item['citizen_name']); ?></td>
@@ -109,12 +125,15 @@ $pendingItems = $staff->getMassPendingCitizen();
                     <a href="<?php echo htmlspecialchars($viewUrl . '?id=' . $item['id']); ?>" class="btn btn-primary btn-xs" style="background-color: #31ce36!important; border-color:#31ce36!important;">View</a>
                   </td>
                         </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
+                        <?php
+                                            }
+                                        }
+                                    } else {
+                                    ?>
                     <tr>
                         <td colspan="8">No pending Citizen found.</td>
                     </tr>
-                <?php endif; ?>
+                    <?php } ?>
             </tbody>
                       </table>
                     </div>

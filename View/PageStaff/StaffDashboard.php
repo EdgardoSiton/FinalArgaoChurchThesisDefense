@@ -27,6 +27,13 @@ $approvedCount = count($approvedRegistrations);
     <!-- Fonts and icons -->
     <script src="assets/js/plugin/webfont/webfont.min.js"></script>
     <script>
+function navigateToEvent() {
+    const selectedEvent = document.getElementById('event_filter').value;
+    if (selectedEvent) {
+        window.location.href = selectedEvent; // Redirects the user to the selected report page.
+    }
+}
+
       WebFont.load({
         google: { families: ["Public Sans:300,400,500,600,700"] },
         custom: {
@@ -60,6 +67,12 @@ $approvedCount = count($approvedRegistrations);
       <?php  require_once 'header.php'?>
         <div class="container">
           <div class="page-inner">
+          <select id="event_filter" name="event_filter" onchange="navigateToEvent()">
+    <option value="">Generate Seminar Report</option>
+    <option value="generatereport.php">Baptism</option>
+    <option value="weddinggeneratereport.php">Wedding</option>
+</select>
+
             <div
               class="d-flex align-items-left align-items-md-center flex-column flex-md-row pt-2 pb-4"
             >

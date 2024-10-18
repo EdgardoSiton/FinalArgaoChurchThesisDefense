@@ -62,6 +62,22 @@ $pendingItems = $staff->getRequestSchedule();
                   <div class="card-header">
                     <h4 class="card-title">Citizen Request Form Scheduling</h4>
                   </div>
+                  <form method="GET" action="StaffRequestSchedule.php">
+             
+             <h6><select id="event_filter" name="event_filter" onchange="this.form.submit()">
+                     <option value="">All</option>
+    <option value="Fiesta Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Fiesta Mass') ? 'selected' : ''; ?>>Fiesta Mass</option>
+    <option value="Novena Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Novena Mass') ? 'selected' : ''; ?>>Novena Mass</option>
+    <option value="Wake Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Wake Mass') ? 'selected' : ''; ?>>Wake Mass</option>
+    <option value="Monthly Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Monthly Mass') ? 'selected' : ''; ?>>Monthly Mass</option>
+    <option value="1st Friday Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === '1st Friday Mass') ? 'selected' : ''; ?>>1st Friday Mass</option>
+    <option value="Cemetery Chapel Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Cemetery Chapel Mass') ? 'selected' : ''; ?>>Cemetery Chapel Mass</option>
+    <option value="Baccalaureate Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Baccalaureate Mass') ? 'selected' : ''; ?>>Baccalaureate Mass</option>
+    <option value="Anointing Of The Sick" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Anointing Of The Sick') ? 'selected' : ''; ?>>Anointing of the Sick</option>
+    <option value="Blessing" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Blessing') ? 'selected' : ''; ?>>Blessing</option>
+    <option value="Special Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Special Mass') ? 'selected' : ''; ?>>Special Mass</option>
+      </select>
+                 </h6>
                   <div class="card-body">
                     <div class="table-responsive">
                       <table
@@ -87,8 +103,16 @@ $pendingItems = $staff->getRequestSchedule();
                         <tfoot>
                           
                         <tbody>
-    <?php if (isset($pendingItems) && !empty($pendingItems)): ?>
-        <?php foreach ($pendingItems as $index => $item): ?>
+                        <?php
+                                    // Retrieve the selected event type from the GET request
+                                    $eventFilter = isset($_GET['event_filter']) ? $_GET['event_filter'] : '';
+
+                                    // Filter pending items based on the selected event type
+                                    if (isset($pendingItems) && !empty($pendingItems)) {
+                                        foreach ($pendingItems as $index => $item) {
+                                            // Check if the event name matches the selected filter or if no filter is applied
+                                            if ($eventFilter === '' || $item['req_category'] === $eventFilter) {
+                                    ?>
             <tr>
             <td><?php echo htmlspecialchars($index + 1); ?></td>
                     <td><?php echo htmlspecialchars($item['req_category']); ?></td>
@@ -121,12 +145,15 @@ $pendingItems = $staff->getRequestSchedule();
          
                   </td>
             </tr>
-        <?php endforeach; ?>
-    <?php else: ?>
+            <?php
+                                            }
+                                        }
+                                    } else {
+                                    ?>
         <tr>
             <td colspan="8">No pending Citizen found.</td>
         </tr>
-    <?php endif; ?>
+        <?php } ?>
 </tbody>
 
                       </table>

@@ -4,6 +4,7 @@ require_once '../../Model/db_connection.php';
 require_once '../../Controller/citizen_con.php';
 $loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
 $nme = $_SESSION['fullname'];
+$regId = $_SESSION['citizend_id'];
 if (!$loggedInUserEmail) {
     header("Location: login.php");
     exit();
@@ -82,8 +83,7 @@ function renderCalendar() {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to midnight to ignore time part for comparison
-    const oneWeekFromNow = new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000); // One week from today
-    const fifteenDaysFromNow = new Date(today.getTime() + 16 * 24 * 60 * 60 * 1000); // 15 days from today
+    const tomorrow = new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000); // Tomorrow's date
     const isCurrentMonth = today.getFullYear() === currentYear && today.getMonth() === currentMonth;
 
     let hasSelectableDate = false;
@@ -106,20 +106,9 @@ function renderCalendar() {
         dayDate.setHours(0, 0, 0, 0); // Ignore time part for comparison
 
         // Disable past dates and today
-        if (dayDate < today) {
-            dayElement.classList.add('past'); // Disable past and current date
-        }
-        // Disable today for Funeral events
-        else if (type === 'Funeral' && dayDate.getTime() === today.getTime()) {
-            dayElement.classList.add('past'); // Disable today for funerals
-        }
-        // Disable based on the event type
-        else if (type === 'Wedding' && dayDate < fifteenDaysFromNow) {
-            dayElement.classList.add('past'); // Disable for weddings if less than 15 days
-        }
-        else if (type !== 'Funeral' && dayDate < oneWeekFromNow) {
-            dayElement.classList.add('past'); // Disable for all other events except funerals if less than 7 days
-        }
+        if (dayDate < tomorrow) {
+            dayElement.classList.add('past'); // Disable past and today
+        } 
         // Enable selectable future dates
         else {
             dayElement.addEventListener('click', () => selectDate(dayElement));
@@ -141,8 +130,6 @@ function renderCalendar() {
 
     initialLoad = false; // Disable automatic month change after the first load
 }
-
-
 
 
 // Initialize calendar on page load
@@ -167,43 +154,25 @@ function selectDate(dayElement) {
         selectedRadioButton.checked = false;
     }
 
+    // Define or use pre-loaded schedule data here, for example:
+    const schedules = [
+        { start_time: "", end_time: "" },
+        { start_time: "", end_time: "" }
+    ]; // Replace this with your static or pre-loaded schedule data
+
     // Get event type from the URL
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type') || 'baptism'; // Default to 'baptism' if not set
 
-    // Check if the selected date is within 15 days from today for weddings
-    const today = new Date();
-    const fifteenDaysFromNow = new Date(today.getTime() + 15 * 24 * 60 * 60 * 1000);
-    const oneWeekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
- 
-    // Make an AJAX request to fetch the schedule for the selected date
-    fetch('../../Controller/getschedule_con.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `date=${formattedDate}`,
-    })
-    .then(response => response.json())
-    .then(schedules => {
-        console.log('Schedules:', schedules); // Debugging
-        updateAvailableTimes(schedules, selectedDate, type === 'baptism'); // Pass the event type as isBaptism
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
+    updateAvailableTimes(schedules, selectedDate, type === 'baptism'); // Pass the event type as isBaptism
 }
+
+// Other functions remain the same...
 
 function updateAvailableTimes(schedules, selectedDate, isBaptism) {
     const timeSlots = document.querySelectorAll('.time .form-check');
 
-    // Check the day of the selected date
-    const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const isSunday = dayOfWeek === 0;
-    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5; // Monday to Friday
-    const isTueThuFri = dayOfWeek === 2 || dayOfWeek === 4 || dayOfWeek === 5; // Tuesday, Thursday, Friday
-
+  
     timeSlots.forEach(slot => {
         const timeRange = slot.querySelector('label').textContent.trim();
         const [startTime, endTime] = timeRange.split(' - ');
@@ -217,40 +186,13 @@ function updateAvailableTimes(schedules, selectedDate, isBaptism) {
         const radioButton = slot.querySelector('input[type="radio"]');
         const statusText = slot.querySelector('h6');
 
-        // Handle Sunday availability
-        if (isSunday) {
-            if (isBaptism) {
-                statusText.textContent = 'Mass Schedule';
-                statusText.style.color = 'gray';
-                radioButton.disabled = true;
-            } else if (startTime === '1:30 PM' && endTime === '2:30 PM') {
-                statusText.textContent = isBooked ? 'Booked' : 'Available';
-                statusText.style.color = isBooked ? 'red' : 'green';
-                radioButton.disabled = isBooked;
-            } else {
-                statusText.textContent = 'Mass Schedule';
-                statusText.style.color = 'gray';
-                radioButton.disabled = true;
-            }
-        } 
-        // Handle 4:30 PM - 5:30 PM slot for weekdays (Monday to Friday)
-        else if (isWeekday && startTime === '4:30 PM' && endTime === '5:30 PM') {
-            statusText.textContent = 'Mass Schedule';
-            statusText.style.color = 'gray';
-            radioButton.disabled = true;
-        } 
-        // Handle Tuesday, Thursday, and Friday unavailability for 11:30 AM - 12:30 PM
-        else if (isTueThuFri && startTime === '11:30 AM' && endTime === '12:30 PM') {
-            statusText.textContent = 'Prayer Schedule';
-            statusText.style.color = 'gray';
-            radioButton.disabled = true;
-        } 
+
         // Default behavior for other slots
-        else {
+       
             statusText.textContent = isBooked ? 'Booked' : 'Available';
             statusText.style.color = isBooked ? 'red' : 'green';
             radioButton.disabled = isBooked;
-        }
+      
     });
 }
 
@@ -268,7 +210,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     renderCalendar();
 });
-
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('scheduleForm');
 
@@ -296,16 +237,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const type = urlParams.get('type') || 'baptism'; // Default to 'baptism' if not set
 
                 let nextPage;
-                if (type === 'baptism') {
-                    nextPage = `FillBaptismForm.php`;
-                } else if (type === 'confirmation') {
-                    nextPage = `FillConfirmationForm.php`;
-                } else if (type === 'Wedding') {
-                    nextPage = `FillWeddingForm.php`;
-                } else if (type === 'Funeral') {
-                    nextPage = `FillFuneralForm.php`;
-                }else if (type === 'RequestForm') {
-                    nextPage = `FillInsideRequestScheduleForm.php`;
+              if (type === 'RequestForm') {
+                    nextPage = `FillOutsideRequestScheduleForm.php`;
                 } else {
                     alert('Invalid scheduling type.');
                     return;
@@ -325,8 +258,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     </script>
         <style>
-   
-   body {
+    
+    body {
             margin: 0;
             background-color: #f4f4f9;
         }
@@ -550,7 +483,7 @@ padding:0;
             cursor: not-allowed;
         }
     </style>
-    <link
+     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
       rel="stylesheet"
       integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl7/1L_dstPt3HV5HzF6Gvk/e3s4Wz6iJgD/+ub2oU"
@@ -575,12 +508,7 @@ padding:0;
       <?php require_once 'header.php'?>
 
       </div>
-    </div>
-    <!-- Navbar & Hero End -->
-    
-
- 
-    
+    </div>    
     </div>
   </div>
   <form id="scheduleForm">
@@ -617,7 +545,7 @@ padding:0;
 
 <div class="schedule">
 
-<div class="time" > 
+<div class="time" style="width:550px!important;"> 
   <h3 style="padding-top: 20px; padding-left: 10px;" class="fw-bold mb-3">Select Time</h3>
   <div style="padding-left: 70px;" class="form-group">
     <div class="d-flex">
@@ -787,7 +715,6 @@ right: 65px;
 " class="btn btn-primary">Submit</button>
 
 </form>
-<?php require_once 'footer.php'?>
 
   <!-- container -->
     <script src="../assets/js/calendar.js"></script>

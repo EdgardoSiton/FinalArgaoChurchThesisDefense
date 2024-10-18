@@ -450,7 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $mail->Body = "
                 <div style='width: 100%; max-width: 400px; margin: auto; background: url(cid:background_img) no-repeat center center; background-size: cover; padding: 20px;'>
                     <div style='background: rgba(255, 255, 255, 0.8); padding: 20px;width:100%;height:auto;'>
-                        Dear {$citizen_name},<br><br>Your appointment schedule for '{$title}' has been confirmed. ₱{$payableAmount}.00<br>Please make sure to pay the said amount in the church office on the day of your appointment.<br><br>Thank you.<br>
+                        Dear {$citizen_name},<br><br>Your appointment schedule for '{$title}' has been confirmed. ₱{$payableAmount}.00<br>Please make sure to pay the said amount in the church office in order to Approve the RequestForm.<br><br>Thank you.<br>
                         <img src='cid:signature_img' style='width: 200px; height: auto;'>
                     </div>
                 </div>";
@@ -619,9 +619,10 @@ else if($confirmationfill_id ){
     $selectrequest = $_POST['selectrequest'] ?? '';
     $role = 'Walkin';
     $event_location = 'Inside';
+    $status = 'Pending';
     // Insert schedule and request form
     $scheduleId = $Citizen->insertSchedule(null, $date, $startTime, $endTime);
-    $requestinside = $Citizen->insertRequestFormFill($scheduleId,$priestId, $selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location);
+    $requestinside = $Citizen->insertRequestFormFill($scheduleId,$priestId,$status, $selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location);
     
     // Insert appointment
    

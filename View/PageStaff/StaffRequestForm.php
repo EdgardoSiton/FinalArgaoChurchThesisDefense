@@ -6,7 +6,8 @@ $regId = $_SESSION['citizend_id'];
 require_once '../../Model/staff_mod.php';
 require_once '../../Model/db_connection.php';
 $staff = new Staff($conn);
-$pendingItems = $staff->getRequestAppointment();
+$statusFilter = isset($_GET['status_filter']) ? $_GET['status_filter'] : null;
+$pendingItems = $staff->getRequestAppointment($statusFilter);
 
 ?>
 
@@ -61,6 +62,30 @@ $pendingItems = $staff->getRequestAppointment();
                 <div class="card-header">
                     <h4 class="card-title">Request Form Appointment Details</h4>
                 </div>
+                <form method="GET" action="StaffRequestForm.php">
+             
+             <h6><select id="event_filter" name="event_filter" onchange="this.form.submit()">
+                     <option value="">All</option>
+    <option value="Fiesta Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Fiesta Mass') ? 'selected' : ''; ?>>Fiesta Mass</option>
+    <option value="Novena Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Novena Mass') ? 'selected' : ''; ?>>Novena Mass</option>
+    <option value="Wake Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Wake Mass') ? 'selected' : ''; ?>>Wake Mass</option>
+    <option value="Monthly Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Monthly Mass') ? 'selected' : ''; ?>>Monthly Mass</option>
+    <option value="1st Friday Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === '1st Friday Mass') ? 'selected' : ''; ?>>1st Friday Mass</option>
+    <option value="Cemetery Chapel Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Cemetery Chapel Mass') ? 'selected' : ''; ?>>Cemetery Chapel Mass</option>
+    <option value="Baccalaureate Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Baccalaureate Mass') ? 'selected' : ''; ?>>Baccalaureate Mass</option>
+    <option value="Anointing Of The Sick" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Anointing Of The Sick') ? 'selected' : ''; ?>>Anointing of the Sick</option>
+    <option value="Blessing" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Blessing') ? 'selected' : ''; ?>>Blessing</option>
+    <option value="Special Mass" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Special Mass') ? 'selected' : ''; ?>>Special Mass</option>
+      </select>
+                 </h6>
+
+                  <form method="GET" action="StaffRequestForm.php">
+    <select id="status_filter" name="status_filter" onchange="this.form.submit()">
+        <option value="">Default</option>
+        <option value="CompletedPaid" <?php echo ($statusFilter === 'CompletedPaid') ? 'selected' : ''; ?>>Completed and Paid</option>
+        <!-- Add other options as needed -->
+    </select>
+</form>
                 <form method="POST" action="../../Controller/updatepayment_con.php">
                 <div class="card-body">
                     <!-- Selected Rows Information -->
@@ -93,8 +118,16 @@ $pendingItems = $staff->getRequestAppointment();
         </tr>
     </thead>
     <tbody>
-        <?php if (isset($pendingItems) && !empty($pendingItems)): ?>
-            <?php foreach ($pendingItems as $index => $item): ?>
+    <?php
+                                    // Retrieve the selected event type from the GET request
+                                    $eventFilter = isset($_GET['event_filter']) ? $_GET['event_filter'] : '';
+
+                                    // Filter pending items based on the selected event type
+                                    if (isset($pendingItems) && !empty($pendingItems)) {
+                                        foreach ($pendingItems as $index => $item) {
+                                            // Check if the event name matches the selected filter or if no filter is applied
+                                            if ($eventFilter === '' || $item['req_category'] === $eventFilter) {
+                                    ?>
                 <tr>
                     <td>
                         <input type="checkbox" class="select-row" name="rappsched_ids[]" value="<?php echo htmlspecialchars($item['appsched_id']); ?>">
@@ -109,7 +142,8 @@ $pendingItems = $staff->getRequestAppointment();
                     <td><?php echo htmlspecialchars($item['cal_date']); ?></td>
                     <td><?php echo htmlspecialchars($item['req_chapel']); ?></td>
                     <td><?php echo htmlspecialchars($item['payable_amount']); ?></td>
-                    <td><?php echo htmlspecialchars($item['approve_priest'] == 'Approved' ? $item['priest_name'] : 'Not approved yet'); ?></td>
+                    <td><?php echo htmlspecialchars($item['ref_number']); ?></td>
+                 
                     <td>
                         <form method="POST" action="../../Controller/updatepayment_con.php">
                             <input type="hidden" name="rcappsched_id" value="<?php echo htmlspecialchars($item['appsched_id']); ?>">
@@ -129,12 +163,15 @@ $pendingItems = $staff->getRequestAppointment();
                         </form>
                     </td>
                 </tr>
-            <?php endforeach; ?>
-        <?php else: ?>
+                <?php
+                                            }
+                                        }
+                                    } else {
+                                    ?>
             <tr>
                 <td colspan="14">No pending Citizen found.</td>
             </tr>
-        <?php endif; ?>
+            <?php } ?>
     </tbody>
 </table>
 

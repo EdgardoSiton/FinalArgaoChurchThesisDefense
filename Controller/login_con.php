@@ -32,7 +32,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['fullname'] = $nme;
 
             // Redirect based on the account type and status
-            if ($status === 'Approve') {
+            if ($status === 'Approved') {
                 if ($accountType === 'Citizen') {
                     header('Location: ../../View/PageCitizen/CitizenPage.php');
                     exit;

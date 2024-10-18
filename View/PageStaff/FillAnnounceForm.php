@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('end_time').value = endTime.trim();
     }
 });
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() { 
     // Retrieve the selected date from sessionStorage
     const selectedDate = sessionStorage.getItem('selectedDate');
     
@@ -134,14 +134,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectedDate) {
         const seminarInput = document.getElementById('dates');
         
-        // Get today's date
-        const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        // Get today's date in the format YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0];
 
-        // Set the min date to today and the max date to the stored selectedDate
+        // Convert the selected date to a Date object
+        const selectedDateObject = new Date(selectedDate);
+        
+        // Subtract 1 day from the selectedDate
+        selectedDateObject.setDate(selectedDateObject.getDate() - 1);
+        
+        // Format the new date back to YYYY-MM-DD
+        const adjustedSelectedDate = selectedDateObject.toISOString().split('T')[0];
+
+        // Set the min date to today and the max date to the adjusted selectedDate
         seminarInput.min = today;
-        seminarInput.max = selectedDate;
+        seminarInput.max = adjustedSelectedDate;
     }
 });
+
 document.addEventListener('DOMContentLoaded', function() {
     // Populate dropdown with time options
     function populateDropdown(dropdown, startHour, startMinute, endHour, endMinute) {

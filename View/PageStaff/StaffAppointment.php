@@ -1,15 +1,20 @@
-<?php
-session_start();
-$email = $_SESSION['email'];
-$nme = $_SESSION['fullname'];
-$regId = $_SESSION['citizend_id'];
-require_once '../../Model/staff_mod.php';
+<?php 
+// Start the session and include necessary files 
+session_start(); 
+$email = $_SESSION['email']; 
+$nme = $_SESSION['fullname']; 
+$regId = $_SESSION['citizend_id']; 
+
+require_once '../../Model/staff_mod.php'; 
 require_once '../../Model/db_connection.php';
+
+// Create an instance of the Staff class 
 $staff = new Staff($conn);
-$pendingItems = $staff->getPendingAppointments();
+$statusFilter = isset($_GET['status_filter']) ? $_GET['status_filter'] : null;
+$pendingItems = $staff->getPendingAppointments($statusFilter); 
 
-?>
 
+?> 
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -55,12 +60,34 @@ $pendingItems = $staff->getPendingAppointments();
 <div class="main-panel">
 <?php require_once 'header.php'?>
 <div class="container">
+  
     <div class="page-inner">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
+                  
                     <h4 class="card-title">Citizen Appointment Details</h4>
                 </div>
+                
+                <form method="GET" action="staffappointment.php">
+             
+                <h6><select id="event_filter" name="event_filter" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        <option value="Baptism" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Baptism') ? 'selected' : ''; ?>>Baptism</option>
+                        <option value="Wedding" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Wedding') ? 'selected' : ''; ?>>Wedding</option>
+                        <option value="Funeral" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Funeral') ? 'selected' : ''; ?>>Funeral</option>
+                        <option value="Confirmation" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Confirmation') ? 'selected' : ''; ?>>Confirmation</option>
+                    </select>
+                    </h6>
+                <form method="GET" action="staffappointment.php">
+    <select id="status_filter" name="status_filter" onchange="this.form.submit()">
+        <option value="">Default</option>
+        <option value="CompletedPaid" <?php echo ($statusFilter === 'CompletedPaid') ? 'selected' : ''; ?>>Completed and Paid</option>
+        <!-- Add other options as needed -->
+    </select>
+</form>
+
+
                 <form method="POST" action="../../Controller/updatepayment_con.php">
                 <div class="card-body">
                     <!-- Selected Rows Information -->
@@ -73,6 +100,11 @@ $pendingItems = $staff->getPendingAppointments();
 
               
     <div class="table-responsive">
+   
+
+
+
+
         <table id="multi-filter-select" class="display table table-striped table-hover">
             <thead>
                 <tr>
@@ -86,71 +118,81 @@ $pendingItems = $staff->getPendingAppointments();
                     <th>Seminar Time</th>
                     <th>Payable Amount</th>
                     <th>Schedule Type</th>
-                    <th>Priest Name</th>
+                    <th>Reference Number</th>
                     <th>Event Status</th>
                     <th>Payment Status</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if (isset($pendingItems) && !empty($pendingItems)): ?>
-                    <?php foreach ($pendingItems as $index => $item): ?>
-                        <tr>
-                            <td>
-                                <input type="checkbox" class="select-row" name="appsched_ids[]" value="<?php echo htmlspecialchars($item['appsched_id']); ?>">
-                            </td>
-                            <td><?php echo htmlspecialchars($index + 1); ?></td>
-                            <td><?php echo htmlspecialchars($item['fullnames']); ?></td>
-                            <td><?php echo htmlspecialchars($item['Event_Name']); ?></td>
-                            <td><?php echo htmlspecialchars(date('Y/m/d', strtotime($item['schedule_date']))); ?></td>
-                            <td><?php echo htmlspecialchars(date('g:i A', strtotime($item['schedule_time']))); ?></td>
-                            <td>
-                              <?php 
-                              if (!empty($item['appointment_schedule_date']) && $item['appointment_schedule_date'] !== '1970-01-01') {
-                                  echo htmlspecialchars(date('Y/m/d', strtotime($item['appointment_schedule_date'])));
-                              } else {
-                                  echo "No Seminar";
-                              }
-                              ?>
-                          </td>
-                          <td>
-                              <?php 
-                              if (!empty($item['appointment_schedule_start_time']) && $item['appointment_schedule_start_time'] !== '00:00:00') {
-                                  echo htmlspecialchars(date('g:i A', strtotime($item['appointment_schedule_start_time'])));
-                              } else {
-                                  echo "No Seminar";
-                              }
-                              ?>
-                          </td>
+                                    <?php
+                                    // Retrieve the selected event type from the GET request
+                                    $eventFilter = isset($_GET['event_filter']) ? $_GET['event_filter'] : '';
 
-                            <td><?php echo htmlspecialchars($item['payable_amount']); ?></td>
-                            <td><?php echo htmlspecialchars($item['roles']); ?></td>
-                            <td><?php echo htmlspecialchars($item['approve_priest'] == 'Approved' ? $item['priest_name'] : 'Not approved yet'); ?></td>
-                            <td>
-                                <form method="POST" action="../../Controller/updatepayment_con.php">
-                                    <input type="hidden" name="cappsched_id" value="<?php echo htmlspecialchars($item['appsched_id']); ?>">
-                                    <select name="c_status" class="btn btn-xs <?php echo $item['c_status'] == 'Completed' ? 'btn-success' : 'btn-primary'; ?>" onchange="this.form.submit()">
-                                        <option value="Process" <?php echo $item['c_status'] == 'Process' ? 'selected' : ''; ?>>Process</option>
-                                        <option value="Completed" <?php echo $item['c_status'] == 'Completed' ? 'selected' : ''; ?>>Completed</option>
-                                    </select>
-                                </form>
-                            </td>
-                            <td>
-                                <form method="POST" action="../../Controller/updatepayment_con.php">
-                                    <input type="hidden" name="appsched_id" value="<?php echo htmlspecialchars($item['appsched_id']); ?>">
-                                    <select name="p_status" class="btn btn-xs <?php echo $item['p_status'] == 'Paid' ? 'btn-success' : 'btn-primary'; ?>" onchange="this.form.submit()">
-                                        <option value="Paid" <?php echo $item['p_status'] == 'Paid' ? 'selected' : ''; ?>>Paid</option>
-                                        <option value="Unpaid" <?php echo $item['p_status'] == 'Unpaid' ? 'selected' : ''; ?>>Unpaid</option>
-                                    </select>
-                                </form>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="13">No pending Citizen found.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
+                                    // Filter pending items based on the selected event type
+                                    if (isset($pendingItems) && !empty($pendingItems)) {
+                                        foreach ($pendingItems as $index => $item) {
+                                            // Check if the event name matches the selected filter or if no filter is applied
+                                            if ($eventFilter === '' || $item['Event_Name'] === $eventFilter) {
+                                    ?>
+                                                <tr>
+                                                    <td>
+                                                        <input type="checkbox" class="select-row" name="appsched_ids[]" value="<?php echo htmlspecialchars($item['appsched_id']); ?>">
+                                                    </td>
+                                                    <td><?php echo htmlspecialchars($index + 1); ?></td>
+                                                    <td><?php echo htmlspecialchars($item['fullnames']); ?></td>
+                                                    <td><?php echo htmlspecialchars($item['Event_Name']); ?></td> <!-- This displays the Event_Name -->
+                                                    <td><?php echo htmlspecialchars(date('Y/m/d', strtotime($item['schedule_date']))); ?></td>
+                                                    <td><?php echo htmlspecialchars(date('g:i A', strtotime($item['schedule_time']))); ?></td>
+                                                    <td>
+                                                        <?php 
+                                                        if (!empty($item['appointment_schedule_date']) && $item['appointment_schedule_date']) {
+                                                            echo htmlspecialchars(date('Y/m/d', strtotime($item['appointment_schedule_date'])));
+                                                        } else {
+                                                            echo "No Seminar";
+                                                        }
+                                                        ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php 
+                                                        if (!empty($item['appointment_schedule_start_time']) && $item['appointment_schedule_start_time'] !== '00:00:00') {
+                                                            echo htmlspecialchars(date('g:i A', strtotime($item['appointment_schedule_start_time'])));
+                                                        } else {
+                                                            echo "No Seminar";
+                                                        }
+                                                        ?>
+                                                    </td>
+                                                    <td><?php echo htmlspecialchars($item['payable_amount']); ?></td>
+                                                    <td><?php echo htmlspecialchars($item['roles']); ?></td>
+                                                    <td><?php echo htmlspecialchars($item['ref_number']); ?></td>
+                                                    <td>
+                                                        <form method="POST" action="../../Controller/updatepayment_con.php">
+                                                            <input type="hidden" name="cappsched_id" value="<?php echo htmlspecialchars($item['appsched_id']); ?>">
+                                                            <select name="c_status" class="btn btn-xs <?php echo $item['c_status'] == 'Completed' ? 'btn-success' : 'btn-primary'; ?>" onchange="this.form.submit()">
+                                                                <option value="Process" <?php echo $item['c_status'] == 'Process' ? 'selected' : ''; ?>>Process</option>
+                                                                <option value="Completed" <?php echo $item['c_status'] == 'Completed' ? 'selected' : ''; ?>>Completed</option>
+                                                            </select>
+                                                        </form>
+                                                    </td>
+                                                    <td>
+                                                        <form method="POST" action="../../Controller/updatepayment_con.php">
+                                                            <input type="hidden" name="appsched_id" value="<?php echo htmlspecialchars($item['appsched_id']); ?>">
+                                                            <select name="p_status" class="btn btn-xs <?php echo $item['p_status'] == 'Paid' ? 'btn-success' : 'btn-primary'; ?>" onchange="this.form.submit()">
+                                                                <option value="Paid" <?php echo $item['p_status'] == 'Paid' ? 'selected' : ''; ?>>Paid</option>
+                                                                <option value="Unpaid" <?php echo $item['p_status'] == 'Unpaid' ? 'selected' : ''; ?>>Unpaid</option>
+                                                            </select>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                    <?php
+                                            }
+                                        }
+                                    } else {
+                                    ?>
+                                        <tr>
+                                            <td colspan="13">No pending Citizen found.</td>
+                                        </tr>
+                                    <?php } ?>
+                                </tbody>
         </table>
     </div>
 

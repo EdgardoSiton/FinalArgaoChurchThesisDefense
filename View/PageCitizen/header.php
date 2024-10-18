@@ -48,7 +48,7 @@
 </style>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light">
-    <a href="#" class="navbar-brand p-0">
+    <a href="CitizenPage.php" class="navbar-brand p-0">
         <img src="assets/img/argaochurch.png" alt="Logo" />
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">

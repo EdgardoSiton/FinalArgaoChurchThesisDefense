@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $walkinfuneral_id = isset($_POST['walkinfuneral_id']) ? $_POST['walkinfuneral_id'] : null;
    $walkinwedding_id= isset($_POST['walkinwedding_id']) ? $_POST['walkinwedding_id'] : null;
    $requestform_id = isset($_POST['requestform_id']) ? $_POST['requestform_id'] : null;
+   $requestform_ids = isset($_POST['requestform_ids']) ? $_POST['requestform_ids'] : null;
     if($baptism_id){
     $month = $_POST['month'] ?? '';
     $day = $_POST['day'] ?? '';
@@ -1205,36 +1206,79 @@ if ($scheduleId) {
         echo "Failed to insert schedule.";
     }
 }else if ($requestform_id) {
-    $datetofollowup = $_POST['datetofollowup'] ?? '';
+    $date = $_POST['date'] ?? '';
+    $startTime = $_POST['start_time'] ?? '';
+    $endTime = $_POST['end_time'] ?? '';
 
-    $selectrequest = $_POST['selectrequest'] ?? '';
-    $chapel = $_POST['chapel'] ?? '';
-    $firstname = $_POST['firstname'] ?? '';  
+    
+    $datetofollowup = $_POST['datetofollowup'] ?? '';
+ 
+    // Collecting the names and address
+ $firstname = $_POST['firstname'] ?? '';  
     $lastname = $_POST['lastname'] ?? ''; 
     $middlename = $_POST['middlename'] ?? ''; 
     $firstnames = $_POST['firstnames'] ?? '';  
     $lastnames = $_POST['lastnames'] ?? ''; 
     $middlenames = $_POST['middlenames'] ?? ''; 
+        $chapel = $_POST['chapel'] ?? '';
     $address = $_POST['address'] ?? ''; 
     $cpnumber = $_POST['cpnumber'] ?? '';
-
+    $selectrequest = $_POST['selectrequest'] ?? '';
+    $role = 'Online';
+    $event_location = 'Outside';
+    $priestId = null ;
+    $status = null;
     $fullname = trim($firstname . ' ' . $middlename . ' ' . $lastname);
     $fullnames = trim($firstnames . ' ' . $middlenames . ' ' . $lastnames);
-
-
-    // Insert into the baptism fill table
+    $startTime = convertTo24HourFormat($startTime);
+    $endTime = convertTo24HourFormat($endTime);
+    $scheduleId = $citizenModel->insertSchedule($userDetails['citizend_id'], $date, $startTime, $endTime);
+  
+    
     $citizenModel->insertRequestFormFill(
-        $selectrequest,
-        $fullname,  
-        $datetofollowup,
-        $address,         
-        $cpnumber,
-        $fullnames,
-        $chapel
+        $scheduleId , $priestId,$status,$selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location
     );
 
     $_SESSION['status'] = "success";
-    header('Location: ../View/PageStaff/StaffDashboard.php');
+    header('Location: ../View/PageCitizen/CitizenPage.php');
+    exit();
+}
+else if ($requestform_ids) {
+    $date = $_POST['date'] ?? '';
+    $startTime = $_POST['start_time'] ?? '';
+    $endTime = $_POST['end_time'] ?? '';
+
+    
+    $datetofollowup = $_POST['datetofollowup'] ?? '';
+ 
+    // Collecting the names and address
+ $firstname = $_POST['firstname'] ?? '';  
+    $lastname = $_POST['lastname'] ?? ''; 
+    $middlename = $_POST['middlename'] ?? ''; 
+    $firstnames = $_POST['firstnames'] ?? '';  
+    $lastnames = $_POST['lastnames'] ?? ''; 
+    $middlenames = $_POST['middlenames'] ?? ''; 
+        $chapel = $_POST['chapel'] ?? '';
+    $address = $_POST['address'] ?? ''; 
+    $cpnumber = $_POST['cpnumber'] ?? '';
+    $selectrequest = $_POST['selectrequest'] ?? '';
+    $role = 'Online';
+    $event_location = 'Inside';
+    $priestId = null ;
+    $status = null;
+    $fullname = trim($firstname . ' ' . $middlename . ' ' . $lastname);
+    $fullnames = trim($firstnames . ' ' . $middlenames . ' ' . $lastnames);
+    $startTime = convertTo24HourFormat($startTime);
+    $endTime = convertTo24HourFormat($endTime);
+    $scheduleId = $citizenModel->insertSchedule($userDetails['citizend_id'], $date, $startTime, $endTime);
+  
+    
+    $citizenModel->insertRequestFormFill(
+        $scheduleId , $priestId,$status,$selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location
+    );
+
+    $_SESSION['status'] = "success";
+    header('Location: ../View/PageCitizen/CitizenPage.php');
     exit();
 }
 

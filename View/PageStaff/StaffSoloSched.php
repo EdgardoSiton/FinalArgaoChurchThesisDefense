@@ -6,6 +6,8 @@ $regId = $_SESSION['citizend_id'];
 require_once '../../Model/staff_mod.php';
 require_once '../../Model/db_connection.php';
 $staff = new Staff($conn);
+// Check for filter values in the GET request 
+$statusFilter = isset($_GET['status_filter']) ? $_GET['status_filter'] : null;
 $pendingItems = $staff->getPendingCitizen();
 
 ?>
@@ -61,6 +63,16 @@ $pendingItems = $staff->getPendingCitizen();
                 <div class="card">
                   <div class="card-header">
                     <h4 class="card-title">Citizen Solo Scheduling</h4>
+                    <form method="GET" action="StaffSoloSched.php">
+             
+             <h6><select id="event_filter" name="event_filter" onchange="this.form.submit()">
+                     <option value="">All</option>
+                     <option value="Baptism" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Baptism') ? 'selected' : ''; ?>>Baptism</option>
+                     <option value="Wedding" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Wedding') ? 'selected' : ''; ?>>Wedding</option>
+                     <option value="Funeral" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Funeral') ? 'selected' : ''; ?>>Funeral</option>
+                     <option value="Confirmation" <?php echo (isset($_GET['event_filter']) && $_GET['event_filter'] === 'Confirmation') ? 'selected' : ''; ?>>Confirmation</option>
+                 </select>
+                 </h6>
                   </div>
                   <div class="card-body">
                     <div class="table-responsive">
@@ -85,8 +97,16 @@ $pendingItems = $staff->getPendingCitizen();
                         <tfoot>
                           
                         <tbody>
-    <?php if (isset($pendingItems) && !empty($pendingItems)): ?>
-        <?php foreach ($pendingItems as $index => $item): ?>
+                        <?php
+                                    // Retrieve the selected event type from the GET request
+                                    $eventFilter = isset($_GET['event_filter']) ? $_GET['event_filter'] : '';
+
+                                    // Filter pending items based on the selected event type
+                                    if (isset($pendingItems) && !empty($pendingItems)) {
+                                        foreach ($pendingItems as $index => $item) {
+                                            // Check if the event name matches the selected filter or if no filter is applied
+                                            if ($eventFilter === '' || $item['event_name'] === $eventFilter) {
+                                    ?>
             <tr>
                 <td><?php echo htmlspecialchars($index + 1); ?></td>
                 <td><?php echo htmlspecialchars($item['citizen_name']); ?></td>
@@ -123,12 +143,15 @@ $pendingItems = $staff->getPendingCitizen();
                     <a href="<?php echo htmlspecialchars($viewUrl . '?id=' . $item['id']); ?>" class="btn btn-primary btn-xs" style="background-color: #31ce36!important; border-color:#31ce36!important;">View</a>
                   </td>
             </tr>
-        <?php endforeach; ?>
-    <?php else: ?>
+            <?php
+                                            }
+                                        }
+                                    } else {
+                                    ?>
         <tr>
             <td colspan="8">No pending Citizen found.</td>
         </tr>
-    <?php endif; ?>
+        <?php } ?>
 </tbody>
 
                       </table>

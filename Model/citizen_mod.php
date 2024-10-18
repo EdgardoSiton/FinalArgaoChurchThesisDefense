@@ -874,7 +874,7 @@ class Citizen {
 private function generateReferenceNumber() {
     do {
         // Generate a random string of 12 uppercase letters and numbers
-        $referenceNumber = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'), 0, 12);
+        $referenceNumber = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'), 0, 4);
     } while (in_array($referenceNumber, self::$generatedReferences));
 
     // Store the generated reference number to avoid future duplicates
@@ -916,15 +916,15 @@ private function generateReferenceNumber() {
             return false; // Insertion failed
         }
     }
-    public function insertRequestFormFill($scheduleId = null, $priestId, $selectrequest = null, $fullname = null, $datetofollowup = null, $address = null, $cpnumber = null, $fullnames = null, $chapel = null,$role = null,$event_location=null) {
+    public function insertRequestFormFill($scheduleId = null, $priestId = null, $status = null, $selectrequest = null, $fullname = null, $datetofollowup = null, $address = null, $cpnumber = null, $fullnames = null, $chapel = null,$role = null,$event_location=null) {
         // Corrected SQL with schedule_id included
         $sql = "INSERT INTO req_form (schedule_id,priest_id,pr_status, req_category, req_person, cal_date, req_address, req_pnumber, req_name_pamisahan, req_chapel, status, role,event_location, created_at) 
-                VALUES (?,?,'Pending', ?, ?, ?, ?, ?, ?, ?, 'Pending',?,?, CURRENT_TIMESTAMP)";
+                VALUES (?,?,?, ?, ?, ?, ?, ?, ?, ?, 'Pending',?,?, CURRENT_TIMESTAMP)";
         
         $stmt = $this->conn->prepare($sql);
         
         // Use 'sssssssss' for the type definition string, corresponding to the parameters
-        $stmt->bind_param("iisssssssss", $scheduleId,$priestId, $selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location);
+        $stmt->bind_param("iissssssssss", $scheduleId,$priestId, $status, $selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location);
         if ($stmt->execute()) {
             // Return the last inserted ID
             $requestId = $this->conn->insert_id;

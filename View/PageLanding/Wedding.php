@@ -202,7 +202,7 @@ margin-LEFT:20px;
             <div class="service-content-inner">
               <a href="#" class="d-inline-block h4 mb-4"><span style="font-weight: bold">Wedding</span></a>
               <p class="mb-4">Begin your new life together...</p>
-              <a class="btn btn-primary rounded-pill py-2 px-4" href="signin.php">Schedule Now</a>
+              <a class="btn btn-primary rounded-pill py-2 px-4" href="signup.php">Schedule Now</a>
             </div>
           </div>
         </div>
