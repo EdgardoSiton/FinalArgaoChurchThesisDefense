@@ -10,9 +10,11 @@ class Citizen {
     public function updateBaptismStatus($bpriest_id, $priestId) {
         // SQL query to update the baptismfill table
         $sql = "UPDATE baptismfill 
-                SET priest_id = ?, 
-                    pr_status = 'Pending' 
-                WHERE baptism_id = ?";
+        SET priest_id = ?, 
+            pr_status = 'Pending', 
+            assigned_time = NOW() 
+        WHERE baptism_id = ?";
+        
 
         // Prepare the statement
         $stmt = $this->conn->prepare($sql);
@@ -36,7 +38,8 @@ class Citizen {
         // SQL query to update the baptismfill table
         $sql = "UPDATE marriagefill 
                 SET priest_id = ?, 
-                    pr_status = 'Pending' 
+                    pr_status = 'Pending' ,
+                    assigned_time = NOW() 
                 WHERE marriagefill_id = ?";
 
         // Prepare the statement
@@ -61,7 +64,8 @@ class Citizen {
         // SQL query to update the baptismfill table
         $sql = "UPDATE defuctomfill 
                 SET priest_id = ?, 
-                    pr_status = 'Pending' 
+                    pr_status = 'Pending' ,
+                    assigned_time = NOW() 
                 WHERE defuctomfill_id = ?";
 
         // Prepare the statement
@@ -86,7 +90,8 @@ class Citizen {
         // SQL query to update the baptismfill table
         $sql = "UPDATE req_form 
                 SET priest_id = ?, 
-                    pr_status = 'Pending' 
+                    pr_status = 'Pending' ,
+                    assigned_time = NOW() 
                 WHERE req_id = ?";
 
         // Prepare the statement
@@ -111,7 +116,8 @@ class Citizen {
         // SQL query to update the baptismfill table
         $sql = "UPDATE confirmationfill 
                 SET priest_id = ?, 
-                    pr_status = 'Pending' 
+                    pr_status = 'Pending' ,
+                    assigned_time = NOW() 
                 WHERE confirmationfill_id = ?";
 
         // Prepare the statement

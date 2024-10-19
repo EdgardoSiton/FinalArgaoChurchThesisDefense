@@ -12,7 +12,177 @@ class Staff {
     public function __construct($conn, $regId = null) {
         $this->conn = $conn;
         $this->regId = $regId;
+        $this->updatePendingAppointments();
     }   
+        // Method to get appointments for a specific priest
+        public function getPriestAppointmentSchedule($priestId) {
+            // Retrieve the appointments for the specific priest
+            $sql = "
+            SELECT 
+                'baptism' AS type,
+                b.baptism_id AS id,
+                b.role AS roles,
+                b.event_name AS Event_Name,
+                c.fullname AS citizen_name, 
+                s.date AS schedule_date,
+                s.start_time AS schedule_time,
+                b.priest_id,
+                priest.fullname AS priest_name
+            FROM 
+                schedule s
+            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
+            JOIN baptismfill b ON s.schedule_id = b.schedule_id
+            LEFT JOIN citizen priest ON b.priest_id = priest.citizend_id AND priest.user_type = 'Priest'  
+            WHERE b.priest_id = ? 
+                AND b.pr_status = 'Pending'
+            UNION ALL
+            SELECT 
+                'confirmation' AS type,
+                cf.confirmationfill_id AS id,
+                cf.role AS roles,
+                cf.event_name AS Event_Name,
+                c.fullname AS citizen_name,
+                s.date AS schedule_date,
+                s.start_time AS schedule_time,
+                cf.priest_id,
+                priest.fullname AS priest_name
+            FROM 
+                schedule s
+            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
+            JOIN confirmationfill cf ON s.schedule_id = cf.schedule_id
+            LEFT JOIN citizen priest ON cf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            WHERE cf.priest_id = ?
+                AND cf.pr_status = 'Pending'
+            UNION ALL
+            SELECT 
+                'marriage' AS type,
+                mf.marriagefill_id AS id,
+                mf.role AS roles,
+                mf.event_name AS Event_Name,
+                c.fullname AS citizen_name,
+                s.date AS schedule_date,
+                s.start_time AS schedule_time,
+                mf.priest_id,
+                priest.fullname AS priest_name
+            FROM 
+                schedule s
+            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
+            JOIN marriagefill mf ON s.schedule_id = mf.schedule_id
+            LEFT JOIN citizen priest ON mf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            WHERE mf.priest_id = ?
+                AND mf.pr_status = 'Pending'
+            UNION ALL
+            SELECT 
+                'defuctom' AS type,
+                df.defuctomfill_id AS id,
+                df.role AS roles,
+                df.event_name AS Event_Name,
+                c.fullname AS citizen_name,
+                s.date AS schedule_date,
+                s.start_time AS schedule_time,
+                df.priest_id,
+                priest.fullname AS priest_name
+            FROM 
+                schedule s
+            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
+            JOIN defuctomfill df ON s.schedule_id = df.schedule_id
+            LEFT JOIN citizen priest ON df.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            WHERE df.priest_id = ?
+                AND df.pr_status = 'Pending'
+            UNION ALL
+            SELECT 
+                'requestform' AS type,
+                rf.req_id AS id,
+                rf.role AS roles,
+                rf.req_category AS Event_Name,
+                rf.req_person AS citizen_name,
+                s.date AS schedule_date,
+                s.start_time AS schedule_time,
+                rf.priest_id,
+                priest.fullname AS priest_name
+            FROM 
+                schedule s
+            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
+            JOIN req_form rf ON s.schedule_id = rf.schedule_id
+            LEFT JOIN citizen priest ON rf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            WHERE rf.priest_id = ?
+                AND rf.pr_status = 'Pending'
+            ORDER BY schedule_date ASC
+            ";
+        
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("iiiii", $priestId, $priestId, $priestId, $priestId, $priestId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            $appointments = [];
+            if ($result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    $appointments[] = $row;
+                }
+            }
+        
+            $stmt->close();
+        
+            return $appointments;
+        }
+    
+        // Method to update pending appointments
+        private function updatePendingAppointments() {
+            // SQL query for baptismfill
+            $sqlBaptism = "
+                UPDATE baptismfill b
+                JOIN schedule s ON b.schedule_id = s.schedule_id
+                SET b.pr_status = NULL, b.priest_id = NULL
+                WHERE b.pr_status = 'Pending'
+                AND (b.assigned_time < NOW() - INTERVAL 24 HOUR);
+            ";
+        
+            // SQL query for confirmationfill
+            $sqlConfirmation = "
+                UPDATE confirmationfill cf
+                JOIN schedule s ON cf.schedule_id = s.schedule_id
+                SET cf.pr_status = NULL, cf.priest_id = NULL
+                WHERE cf.pr_status = 'Pending'
+                AND (cf.assigned_time < NOW() - INTERVAL 24 HOUR);
+            ";
+        
+            // SQL query for marriagefill
+            $sqlMarriage = "
+                UPDATE marriagefill mf
+                JOIN schedule s ON mf.schedule_id = s.schedule_id
+                SET mf.pr_status = NULL, mf.priest_id = NULL
+                WHERE mf.pr_status = 'Pending'
+                AND (mf.assigned_time < NOW() - INTERVAL 24 HOUR);
+            ";
+        
+            // SQL query for defuctomfill
+            $sqlDefuctom = "
+                UPDATE defuctomfill df
+                JOIN schedule s ON df.schedule_id = s.schedule_id
+                SET df.pr_status = NULL, df.priest_id = NULL
+                WHERE df.pr_status = 'Pending'
+                AND (df.assigned_time < NOW() - INTERVAL 24 HOUR);
+            ";
+        
+            // SQL query for req_form
+            $sqlRequestForm = "
+                UPDATE req_form rf
+                JOIN schedule s ON rf.schedule_id = s.schedule_id
+                SET rf.pr_status = NULL, rf.priest_id = NULL
+                WHERE rf.pr_status = 'Pending'
+                AND (rf.assigned_time < NOW() - INTERVAL 24 HOUR);
+            ";
+        
+            // Execute each query separately
+            $this->conn->prepare($sqlBaptism)->execute();
+            $this->conn->prepare($sqlConfirmation)->execute();
+            $this->conn->prepare($sqlMarriage)->execute();
+            $this->conn->prepare($sqlDefuctom)->execute();
+            $this->conn->prepare($sqlRequestForm)->execute();
+        }
+        
+        
     public function generateWeddingReport() {
         // SQL query to fetch wedding report data
         $sql = "

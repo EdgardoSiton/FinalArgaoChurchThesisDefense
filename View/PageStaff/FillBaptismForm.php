@@ -190,7 +190,7 @@ small {
                         <label for="priestSelect2">Select Priest</label>
                         <select class="form-control" id="priestSelect2" name="eventType">
                             <option value="" disabled selected>Select Priest</option>
-                            <!-- Populate priests in the dropdown -->
+                 
                             <?php if (!empty($priests)): ?>
                                 <?php foreach ($priests as $priest): ?>
                                     <option value="<?php echo htmlspecialchars($priest['citizend_id']); ?>">
