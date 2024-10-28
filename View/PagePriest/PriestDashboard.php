@@ -11,6 +11,27 @@ $appointments = new Priest($conn);
 // Fetch appointment schedule for the priest
 $priestId = $regId; // Assuming the priest's ID is stored in session as 'citizend_id'
 $appointmentSchedule = $appointments->getPriestAppointmentSchedule($priestId);
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -30,6 +51,12 @@ $appointmentSchedule = $appointments->getPriestAppointmentSchedule($priestId);
     />
     <!-- Fonts and icons -->
     <script src="../assets/js/plugin/webfont/webfont.min.js"></script>
+    <!-- jQuery (required for Bootstrap's JavaScript plugins) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
       WebFont.load({
         google: { families: ["Public Sans:300,400,500,600,700"] },
@@ -112,7 +139,38 @@ $appointmentSchedule = $appointments->getPriestAppointmentSchedule($priestId);
     </style>
   </head>
   <body>
- 
+  <div class="modal fade" id="declineModal" tabindex="-1" role="dialog" aria-labelledby="declineModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="declineModalLabel">Decline Appointment</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="declineForm" method="POST" action="../../Controller/priest_con.php">
+                <div class="modal-body">
+                    <div id="confirmationStep">
+                        <p>Are you sure you want to decline this appointment?</p>
+                    </div>
+                    <div id="reasonStep" class="d-none">
+                        <div class="form-group">
+                            <label for="declineReason">Reason for declining</label>
+                            <input type="text" class="form-control" id="declineReason" name="declineReason" placeholder="Enter reason">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" id="confirmDeclineBtn" class="btn btn-danger">Yes, Decline</button>
+                    <button type="submit" id="submitReasonBtn" class="btn btn-primary d-none">Submit Reason</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
     
 
 <?php  require_once 'sidebar.php'?>
@@ -326,58 +384,74 @@ $appointmentSchedule = $appointments->getPriestAppointmentSchedule($priestId);
             });
         });
     });
-
-    // Handle the decline button click
     document.querySelectorAll('.decline-btn').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var appointmentId = this.getAttribute('data-id');
-            var appointmentType = this.getAttribute('data-type'); // Get the type
+    button.addEventListener('click', function() {
+        var appointmentId = this.getAttribute('data-id');
+        var appointmentType = this.getAttribute('data-type'); // Get the type
 
-            // SweetAlert confirmation dialog for declining
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "Once declined, you cannot undo this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, decline it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Send AJAX request to decline appointment
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('POST', '../../Controller/priest_con.php', true);
-                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                    xhr.onload = function() {
-                        if (xhr.status === 200) {
-                            if (xhr.responseText === 'success') {
-                                Swal.fire(
-                                    'Declined!',
-                                    'The appointment has been declined.',
-                                    'success'
-                                ).then(() => {
-                                    location.reload(); // Optionally reload the page
-                                });
-                            } else {
-                                Swal.fire(
-                                    'Error!',
-                                    'There was an issue declining the appointment.',
-                                    'error'
-                                );
-                            }
-                        } else {
-                            Swal.fire(
-                                'Error!',
-                                'There was an issue processing the request.',
-                                'error'
-                            );
-                        }
-                    };
-                    xhr.send('appointmentId=' + encodeURIComponent(appointmentId) + '&appointmentType=' + encodeURIComponent(appointmentType) + '&action=decline');
+        // Reset modal steps
+        document.getElementById('confirmationStep').classList.remove('d-none');
+        document.getElementById('reasonStep').classList.add('d-none');
+        document.getElementById('confirmDeclineBtn').classList.remove('d-none');
+        document.getElementById('submitReasonBtn').classList.add('d-none');
+
+        // Show the modal
+        $('#declineModal').modal('show');
+
+        // Handle confirm decline button click
+        document.getElementById('confirmDeclineBtn').onclick = function() {
+            // Hide confirmation, show reason input
+            document.getElementById('confirmationStep').classList.add('d-none');
+            document.getElementById('reasonStep').classList.remove('d-none');
+            document.getElementById('confirmDeclineBtn').classList.add('d-none');
+            document.getElementById('submitReasonBtn').classList.remove('d-none');
+        };
+
+        // Handle form submission
+        document.getElementById('declineForm').onsubmit = function(e) {
+            e.preventDefault(); // Prevent the form from submitting normally
+
+            var declineReason = document.getElementById('declineReason').value;
+
+            // Send AJAX request to decline appointment with reason
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '../../Controller/priest_con.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    if (xhr.responseText === 'success') {
+                        Swal.fire(
+                            'Declined!',
+                            'The appointment has been declined.',
+                            'success'
+                        ).then(() => {
+                            location.reload(); // Optionally reload the page
+                        });
+                    } else {
+                        Swal.fire(
+                            'Error!',
+                            'There was an issue declining the appointment.',
+                            'error'
+                        );
+                    }
+                } else {
+                    Swal.fire(
+                        'Error!',
+                        'There was an issue processing the request.',
+                        'error'
+                    );
                 }
-            });
-        });
+            };
+
+            // Send data: appointmentId, appointmentType, and reason
+            xhr.send('appointmentId=' + encodeURIComponent(appointmentId) + 
+                     '&appointmentType=' + encodeURIComponent(appointmentType) +
+                     '&declineReason=' + encodeURIComponent(declineReason) + 
+                     '&action=decline');
+        };
     });
+});
+
 });
 
 

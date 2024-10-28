@@ -2,13 +2,29 @@
 
 require_once '../../Model/db_connection.php';
 require_once '../../Controller/citizen_con.php';
-$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
 if (!$loggedInUserEmail) {
-    header("Location: login.php");
-    exit();
+  header("Location: ../../index.php");
+  exit();
 }
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
+
 
 ?>
 <!DOCTYPE html>
@@ -111,18 +127,23 @@ function renderCalendar() {
             dayElement.classList.add('past'); // Disable past and current date
         }
         // Disable today for Funeral events
-        else if (type === 'Funeral' && dayDate.getTime() === today.getTime()) {
-            dayElement.classList.add('past'); // Disable today for funerals
-        }
-        
-        // Disable based on the event type
-        else if (type === 'Wedding' && dayDate < fifteenDaysFromNow) {
-            dayElement.classList.add('past'); // Disable for weddings if less than 15 days
-        }
-      
-        else if (type !== 'Funeral' && dayDate < oneWeekFromNow) {
-            dayElement.classList.add('past'); // Disable for all other events except funerals if less than 7 days
-        }
+   // Disable today for Funeral and RequestForm events
+else if ((type === 'Funeral' || type === 'RequestForm') && dayDate.getTime() === today.getTime()) {
+    dayElement.classList.add('past'); // Disable today
+}
+
+// Disable based on the event type
+else if (type === 'Wedding' && dayDate < fifteenDaysFromNow) {
+    dayElement.classList.add('past'); // Disable for weddings if less than 15 days
+}
+
+// Disable for other event types except funerals and request forms if less than 7 days
+else if (type !== 'Funeral' && type !== 'RequestForm' && dayDate < oneWeekFromNow) {
+    dayElement.classList.add('past'); // Disable for other events if less than 7 days
+}
+
+
+
         // Enable selectable future dates
         else {
             dayElement.addEventListener('click', () => selectDate(dayElement));

@@ -26,7 +26,7 @@ use Symfony\Component\Validator\Exception\UnexpectedValueException;
 class CurrencyValidator extends ConstraintValidator
 {
     /**
-     * @return void
+     * {@inheritdoc}
      */
     public function validate(mixed $value, Constraint $constraint)
     {

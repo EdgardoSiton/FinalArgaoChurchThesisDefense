@@ -18,13 +18,20 @@ use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
  */
 class ClassDiscriminatorFromClassMetadata implements ClassDiscriminatorResolverInterface
 {
-    private array $mappingForMappedObjectCache = [];
+    /**
+     * @var ClassMetadataFactoryInterface
+     */
+    private $classMetadataFactory;
+    private $mappingForMappedObjectCache = [];
 
-    public function __construct(
-        private readonly ClassMetadataFactoryInterface $classMetadataFactory,
-    ) {
+    public function __construct(ClassMetadataFactoryInterface $classMetadataFactory)
+    {
+        $this->classMetadataFactory = $classMetadataFactory;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getMappingForClass(string $class): ?ClassDiscriminatorMapping
     {
         if ($this->classMetadataFactory->hasMetadataFor($class)) {
@@ -34,6 +41,9 @@ class ClassDiscriminatorFromClassMetadata implements ClassDiscriminatorResolverI
         return null;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getMappingForMappedObject(object|string $object): ?ClassDiscriminatorMapping
     {
         if ($this->classMetadataFactory->hasMetadataFor($object)) {
@@ -44,7 +54,7 @@ class ClassDiscriminatorFromClassMetadata implements ClassDiscriminatorResolverI
             }
         }
 
-        $cacheKey = \is_object($object) ? $object::class : $object;
+        $cacheKey = \is_object($object) ? \get_class($object) : $object;
         if (!\array_key_exists($cacheKey, $this->mappingForMappedObjectCache)) {
             $this->mappingForMappedObjectCache[$cacheKey] = $this->resolveMappingForMappedObject($object);
         }
@@ -52,6 +62,9 @@ class ClassDiscriminatorFromClassMetadata implements ClassDiscriminatorResolverI
         return $this->mappingForMappedObjectCache[$cacheKey];
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getTypeForMappedObject(object|string $object): ?string
     {
         if (null === $mapping = $this->getMappingForMappedObject($object)) {
@@ -61,13 +74,11 @@ class ClassDiscriminatorFromClassMetadata implements ClassDiscriminatorResolverI
         return $mapping->getMappedObjectType($object);
     }
 
-    private function resolveMappingForMappedObject(object|string $object): ?ClassDiscriminatorMapping
+    private function resolveMappingForMappedObject(object|string $object)
     {
         $reflectionClass = new \ReflectionClass($object);
         if ($parentClass = $reflectionClass->getParentClass()) {
-            if (null !== ($parentMapping = $this->getMappingForMappedObject($parentClass->getName()))) {
-                return $parentMapping;
-            }
+            return $this->getMappingForMappedObject($parentClass->getName());
         }
 
         foreach ($reflectionClass->getInterfaceNames() as $interfaceName) {

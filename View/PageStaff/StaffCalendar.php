@@ -2,6 +2,26 @@
 session_start();
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -104,11 +124,13 @@ $regId = $_SESSION['citizend_id'];
 <button style="position: absolute; top: 85px; right: 35px;" type="button" class="btn btn-primary btn-round" data-toggle="modal" data-target="#myModal">
   Add Event
 </button>
+
     <!-- About calendar -->
     <?php require_once 'Calendar.php'?>
     </div>
     
 </div>
+
 
           </div>
 

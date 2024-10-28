@@ -23,7 +23,7 @@ use Symfony\Component\DependencyInjection\Reference;
 class AddAutoMappingConfigurationPass implements CompilerPassInterface
 {
     /**
-     * @return void
+     * {@inheritdoc}
      */
     public function process(ContainerBuilder $container)
     {

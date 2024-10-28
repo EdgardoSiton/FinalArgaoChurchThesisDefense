@@ -8,7 +8,30 @@ $regId = $_SESSION['citizend_id'];
 require_once '../../Model/db_connection.php';
 require_once '../../Model/staff_mod.php';
 $staff = new Staff($conn);
-$announcements = $staff->getAnnouncements();
+
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+    header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
+
+
+
 ?>
 
 <!DOCTYPE html>
@@ -193,27 +216,27 @@ small {
 
             <!-- Groom Firstname -->
             <div class="form-group">
-                <label for="firstname">Firstname of Groom</label>
-                <input type="text" class="form-control" id="firstname" name="firstname" placeholder="Enter Firstname"
-                    value="<?php echo isset($userDetails) ? htmlspecialchars($userDetails['firstname']) : ''; ?>" />
-                <div id="firstnameError" class="error text-danger"></div>
-            </div>
+    <label for="firstname">Firstname of Groom</label>
+    <input type="text" class="form-control" id="firstname" name="firstname" placeholder="Enter Firstname"
+        value="<?php echo isset($userDetails) && $userDetails['gender'] === 'Male' ? htmlspecialchars($userDetails['firstname']) : ''; ?>" />
+    <div id="firstnameError" class="error text-danger"></div>
+</div>
 
-            <!-- Groom Lastname -->
-            <div class="form-group">
-                <label for="lastname">Last Name of Groom</label>
-                <input type="text" class="form-control" id="lastname" name="lastname" placeholder="Enter Lastname"
-                    value="<?php echo isset($userDetails) ? htmlspecialchars($userDetails['lastname']) : ''; ?>" />
-                <div id="lastnameError" class="error text-danger"></div>
-            </div>
+<!-- Groom Lastname -->
+<div class="form-group">
+    <label for="lastname">Last Name of Groom</label>
+    <input type="text" class="form-control" id="lastname" name="lastname" placeholder="Enter Lastname"
+        value="<?php echo isset($userDetails) && $userDetails['gender'] === 'Male' ? htmlspecialchars($userDetails['lastname']) : ''; ?>" />
+    <div id="lastnameError" class="error text-danger"></div>
+</div>
 
-            <!-- Groom Middlename -->
-            <div class="form-group">
-                <label for="middlename">Middle Name of Groom</label>
-                <input type="text" class="form-control" id="middlename" name="middlename" placeholder="Enter Middlename"
-                    value="<?php echo isset($userDetails) ? htmlspecialchars($userDetails['middlename']) : ''; ?>" />
-                <div id="middlenameError" class="error text-danger"></div>
-            </div>
+<!-- Groom Middlename -->
+<div class="form-group">
+    <label for="middlename">Middle Name of Groom</label>
+    <input type="text" class="form-control" id="middlename" name="middlename" placeholder="Enter Middlename"
+        value="<?php echo isset($userDetails) && $userDetails['gender'] === 'Male' ? htmlspecialchars($userDetails['middlename']) : ''; ?>" />
+    <div id="middlenameError" class="error text-danger"></div>
+</div>
 
             <!-- Groom Date of Birth -->
             <div class="form-group">
@@ -249,9 +272,7 @@ small {
             <!-- Groom Place of Birth -->
             <div class="form-group">
                 <label for="address">Groom Place of Birth</label>
-                <textarea class="form-control" id="address" name="groom_place_of_birth" placeholder="Enter Address"><?php
-                    echo isset($userDetails) ? htmlspecialchars($userDetails['address']) : '';
-                ?></textarea>
+                <textarea class="form-control" id="address" name="groom_place_of_birth" placeholder="Enter Address"></textarea>
                 <div id="addressError" class="error text-danger"></div>
             </div>
 
@@ -265,7 +286,7 @@ small {
             <!-- Groom Address -->
             <div class="form-group">
                 <label for="parents_residence">Groom Address</label>
-                <textarea class="form-control" id="parents_residence" name="groom_address" placeholder="Enter Address"></textarea>
+                <textarea class="form-control" id="parents_residence" name="groom_address" placeholder="Enter Address"><?php echo isset($userDetails) && $userDetails['gender'] === 'Male' ? htmlspecialchars($userDetails['address']) : ''; ?></textarea>
                 <div id="groomAddressError" class="error text-danger"></div>
             </div>
              <!-- Groom Religion -->
@@ -309,27 +330,27 @@ small {
 ">Fillup Bride Details</label></div>
     <!-- Bride Firstname -->
     <div class="form-group">
-                <label for="firstnames">Firstname of Bride</label>
-                <input type="text" class="form-control" id="firstnames" name="firstnames" placeholder="Enter Firstname"
-                    value="<?php echo isset($userDetails) ? htmlspecialchars($userDetails['firstname']) : ''; ?>" />
-                <div id="brideFirstnameError" class="error text-danger"></div>
-            </div>
+    <label for="firstnames">Firstname of Bride</label>
+    <input type="text" class="form-control" id="firstnames" name="firstnames" placeholder="Enter Firstname"
+        value="<?php echo isset($userDetails) && $userDetails['gender'] === 'Female' ? htmlspecialchars($userDetails['firstname']) : ''; ?>" />
+    <div id="brideFirstnameError" class="error text-danger"></div>
+</div>
 
-            <!-- Bride Lastname -->
-            <div class="form-group">
-                <label for="lastnames">Last Name of Bride</label>
-                <input type="text" class="form-control" id="lastnames" name="lastnames" placeholder="Enter Lastname"
-                    value="<?php echo isset($userDetails) ? htmlspecialchars($userDetails['lastname']) : ''; ?>" />
-                <div id="brideLastnameError" class="error text-danger"></div>
-            </div>
+<!-- Bride Lastname -->
+<div class="form-group">
+    <label for="lastnames">Last Name of Bride</label>
+    <input type="text" class="form-control" id="lastnames" name="lastnames" placeholder="Enter Lastname"
+        value="<?php echo isset($userDetails) && $userDetails['gender'] === 'Female' ? htmlspecialchars($userDetails['lastname']) : ''; ?>" />
+    <div id="brideLastnameError" class="error text-danger"></div>
+</div>
 
-            <!-- Bride Middlename -->
-            <div class="form-group">
-                <label for="middlenames">Middle Name of Bride</label>
-                <input type="text" class="form-control" id="middlenames" name="middlenames" placeholder="Enter Middlename"
-                    value="<?php echo isset($userDetails) ? htmlspecialchars($userDetails['middlename']) : ''; ?>" />
-                <div id="brideMiddlenameError" class="error text-danger"></div>
-            </div>
+<!-- Bride Middlename -->
+<div class="form-group">
+    <label for="middlenames">Middle Name of Bride</label>
+    <input type="text" class="form-control" id="middlenames" name="middlenames" placeholder="Enter Middlename"
+        value="<?php echo isset($userDetails) && $userDetails['gender'] === 'Female' ? htmlspecialchars($userDetails['middlename']) : ''; ?>" />
+    <div id="brideMiddlenameError" class="error text-danger"></div>
+</div>
 
             <!-- Bride Date of Birth -->
             <div class="form-group">
@@ -365,9 +386,7 @@ small {
             <!-- Bride Place of Birth -->
             <div class="form-group">
                 <label for="bride_place_of_birth">Bride Place of Birth</label>
-                <textarea class="form-control" id="bride_place_of_birth" name="bride_place_of_birth" placeholder="Enter Address"><?php
-                    echo isset($userDetails) ? htmlspecialchars($userDetails['address']) : '';
-                ?></textarea>
+                <textarea class="form-control" id="bride_place_of_birth" name="bride_place_of_birth" placeholder="Enter Address"></textarea>
                 <div id="bridePlaceOfBirthError" class="error text-danger"></div>
             </div>
 
@@ -380,7 +399,7 @@ small {
             <!-- Bride Address -->
             <div class="form-group">
                 <label for="bride_address">Bride Address</label>
-                <textarea class="form-control" id="bride_address" name="bride_address" placeholder="Enter Address"></textarea>
+                <textarea class="form-control" id="bride_address" name="bride_address" placeholder="Enter Address"><?php echo isset($userDetails) && $userDetails['gender'] === 'Female' ? htmlspecialchars($userDetails['address']) : ''; ?></textarea>
                 <div id="brideAddressError" class="error text-danger"></div>
             </div>
 

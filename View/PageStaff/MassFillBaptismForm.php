@@ -12,6 +12,26 @@ $staff = new Staff($conn);
 // Fetch announcement data based on the announcement_id from the URL
 $announcementId = isset($_GET['announcement_id']) ? intval($_GET['announcement_id']) : 0;
 $announcementData = $staff->getAnnouncementById($announcementId);
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -330,60 +350,6 @@ document.getElementById('baptismForm').addEventListener('submit', function(event
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    let formModified = false; 
-
-    const announcementIdInput = document.querySelector('input[name="announcement_id"]');
-    const announcementId = announcementIdInput ? announcementIdInput.value : null;
-
-    const form = document.querySelector('form'); // The form element
-
-    // Set formModified to true when any input in the form is changed
-    form.addEventListener('input', () => {
-        formModified = true;
-    });
-
-    // Before unload event to release capacity if form is modified but not submitted
-    window.addEventListener('beforeunload', function (e) {
-        if (formModified && announcementId) {
-            fetch('/../../Controller/release_capacity.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({
-                    announcement_id: announcementId
-                }),
-                keepalive: true
-            }).then(response => {
-                if (response.ok) {
-                    console.log('Capacity released successfully');
-                } else {
-                    console.log('Error releasing capacity');
-                }
-            }).catch(error => {
-                console.error('Error:', error);
-            });
-        }
-    });
-
-    // Handle tab or window visibility change
-    document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'hidden' && formModified && announcementId) {
-            fetch('/../../Controller/release_capacity.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({
-                    announcement_id: announcementId
-                }),
-                keepalive: true
-            });
-        }
-    });
-});
-
 
 
 function validateForm() {

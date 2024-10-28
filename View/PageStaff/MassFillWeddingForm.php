@@ -10,7 +10,26 @@ $staff = new Staff($conn);
 // Fetch announcement data based on the announcement_id from the URL
 $announcementId = isset($_GET['announcement_id']) ? intval($_GET['announcement_id']) : 0;
 $announcementData = $staff->getAnnouncementById($announcementId);
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
 
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 
 <!DOCTYPE html>

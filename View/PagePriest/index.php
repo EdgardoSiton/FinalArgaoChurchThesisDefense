@@ -4,12 +4,30 @@ require_once '../../Model/db_connection.php';
 session_start();
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
-
-// Initialize Priest class
 $appointments = new Priest($conn);
 
 // Fetch appointment schedule for the priest
 $priestId = $regId; // Assuming the priest's ID is stored in session as 'citizend_id'
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}
 
 ?>
 <!DOCTYPE html>

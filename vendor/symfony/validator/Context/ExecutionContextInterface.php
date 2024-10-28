@@ -29,7 +29,7 @@ use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
  * When you make another call to the validator, while the validation is in
  * progress, the violations will be isolated from each other:
  *
- *     public function validate(mixed $value, Constraint $constraint): void
+ *     public function validate(mixed $value, Constraint $constraint)
  *     {
  *         $validator = $this->context->getValidator();
  *
@@ -40,7 +40,7 @@ use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
  * However, if you want to add the violations to the current context, use the
  * {@link ValidatorInterface::inContext()} method:
  *
- *     public function validate(mixed $value, Constraint $constraint): void
+ *     public function validate(mixed $value, Constraint $constraint)
  *     {
  *         $validator = $this->context->getValidator();
  *
@@ -66,8 +66,6 @@ interface ExecutionContextInterface
      *
      * @param string|\Stringable $message The error message as a string or a stringable object
      * @param array              $params  The parameters substituted in the error message
-     *
-     * @return void
      */
     public function addViolation(string $message, array $params = []);
 
@@ -93,7 +91,7 @@ interface ExecutionContextInterface
      *
      * Useful if you want to validate additional constraints:
      *
-     *     public function validate(mixed $value, Constraint $constraint): void
+     *     public function validate(mixed $value, Constraint $constraint)
      *     {
      *         $validator = $this->context->getValidator();
      *
@@ -119,82 +117,96 @@ interface ExecutionContextInterface
     public function getObject(): ?object;
 
     /**
-     * Warning: Should not be called by user code, to be used by the validator engine only.
+     * Sets the currently validated value.
      *
      * @param object|null $object       The currently validated object
      * @param string      $propertyPath The property path to the current value
      *
-     * @return void
+     * @internal Used by the validator engine. Should not be called by user
+     *           code.
      */
-    public function setNode(mixed $value, ?object $object, ?MetadataInterface $metadata, string $propertyPath);
+    public function setNode(mixed $value, ?object $object, MetadataInterface $metadata = null, string $propertyPath);
 
     /**
-     * Warning: Should not be called by user code, to be used by the validator engine only.
+     * Sets the currently validated group.
      *
      * @param string|null $group The validated group
      *
-     * @return void
+     * @internal Used by the validator engine. Should not be called by user
+     *           code.
      */
     public function setGroup(?string $group);
 
     /**
-     * Warning: Should not be called by user code, to be used by the validator engine only.
+     * Sets the currently validated constraint.
      *
-     * @return void
+     * @internal Used by the validator engine. Should not be called by user
+     *           code.
      */
     public function setConstraint(Constraint $constraint);
 
     /**
-     * Warning: Should not be called by user code, to be used by the validator engine only.
+     * Marks an object as validated in a specific validation group.
      *
      * @param string $cacheKey  The hash of the object
      * @param string $groupHash The group's name or hash, if it is group
      *                          sequence
      *
-     * @return void
+     * @internal Used by the validator engine. Should not be called by user
+     *           code.
      */
     public function markGroupAsValidated(string $cacheKey, string $groupHash);
 
     /**
-     * Warning: Should not be called by user code, to be used by the validator engine only.
+     * Returns whether an object was validated in a specific validation group.
      *
      * @param string $cacheKey  The hash of the object
      * @param string $groupHash The group's name or hash, if it is group
      *                          sequence
+     *
+     * @internal Used by the validator engine
      */
     public function isGroupValidated(string $cacheKey, string $groupHash): bool;
 
     /**
-     * Warning: Should not be called by user code, to be used by the validator engine only.
+     * Marks a constraint as validated for an object.
      *
      * @param string $cacheKey       The hash of the object
      * @param string $constraintHash The hash of the constraint
      *
-     * @return void
+     * @internal Used by the validator engine. Should not be called by user
+     *           code.
      */
     public function markConstraintAsValidated(string $cacheKey, string $constraintHash);
 
     /**
-     * Warning: Should not be called by user code, to be used by the validator engine only.
+     * Returns whether a constraint was validated for an object.
      *
      * @param string $cacheKey       The hash of the object
      * @param string $constraintHash The hash of the constraint
+     *
+     * @internal Used by the validator engine
      */
     public function isConstraintValidated(string $cacheKey, string $constraintHash): bool;
 
     /**
-     * Warning: Should not be called by user code, to be used by the validator engine only.
+     * Marks that an object was initialized.
      *
      * @param string $cacheKey The hash of the object
+     *
+     * @internal Used by the validator engine. Should not be called by user
+     *           code.
      *
      * @see ObjectInitializerInterface
      */
-    public function markObjectAsInitialized(string $cacheKey): void;
+    public function markObjectAsInitialized(string $cacheKey);
 
     /**
-     * Warning: Should not be called by user code, to be used by the validator engine only.
+     * Returns whether an object was initialized.
      *
      * @param string $cacheKey The hash of the object
+     *
+     * @internal Used by the validator engine
      *
      * @see ObjectInitializerInterface
      */

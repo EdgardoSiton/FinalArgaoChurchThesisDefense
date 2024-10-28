@@ -22,15 +22,18 @@ class Priest {
             c.fullname AS citizen_name, 
             s.date AS schedule_date,
             s.start_time AS schedule_time,
-            b.priest_id,
+            pa.approval_id,
             priest.fullname AS priest_name
         FROM 
             schedule s
         LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
         JOIN baptismfill b ON s.schedule_id = b.schedule_id
-        LEFT JOIN citizen priest ON b.priest_id = priest.citizend_id AND priest.user_type = 'Priest'  
-        WHERE b.priest_id = ? 
-            AND b.pr_status = 'Pending'
+        LEFT JOIN 
+            priest_approval pa ON pa.approval_id = b.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+        WHERE pa.priest_id = ? 
+            AND pa.pr_status = 'Pending'
         UNION ALL
         SELECT 
             'confirmation' AS type,
@@ -40,15 +43,18 @@ class Priest {
             c.fullname AS citizen_name,
             s.date AS schedule_date,
             s.start_time AS schedule_time,
-            cf.priest_id,
+            pa.approval_id,
             priest.fullname AS priest_name
         FROM 
             schedule s
         LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
         JOIN confirmationfill cf ON s.schedule_id = cf.schedule_id
-        LEFT JOIN citizen priest ON cf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
-        WHERE cf.priest_id = ?
-            AND cf.pr_status = 'Pending'
+        LEFT JOIN 
+            priest_approval pa ON pa.approval_id = cf.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+        WHERE pa.priest_id = ?
+            AND pa.pr_status = 'Pending'
         UNION ALL
         SELECT 
             'marriage' AS type,
@@ -58,15 +64,18 @@ class Priest {
             c.fullname AS citizen_name,
             s.date AS schedule_date,
             s.start_time AS schedule_time,
-            mf.priest_id,
+            pa.approval_id,
             priest.fullname AS priest_name
         FROM 
             schedule s
         LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
         JOIN marriagefill mf ON s.schedule_id = mf.schedule_id
-        LEFT JOIN citizen priest ON mf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
-        WHERE mf.priest_id = ?
-            AND mf.pr_status = 'Pending'
+        LEFT JOIN 
+            priest_approval pa ON pa.approval_id = mf.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+        WHERE pa.priest_id = ?
+            AND pa.pr_status = 'Pending'
         UNION ALL
         SELECT 
             'defuctom' AS type,
@@ -76,15 +85,18 @@ class Priest {
             c.fullname AS citizen_name,
             s.date AS schedule_date,
             s.start_time AS schedule_time,
-            df.priest_id,
+            pa.approval_id,
             priest.fullname AS priest_name
         FROM 
             schedule s
         LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
         JOIN defuctomfill df ON s.schedule_id = df.schedule_id
-        LEFT JOIN citizen priest ON df.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
-        WHERE df.priest_id = ?
-            AND df.pr_status = 'Pending'
+        LEFT JOIN 
+            priest_approval pa ON pa.approval_id = df.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+        WHERE pa.priest_id = ?
+            AND pa.pr_status = 'Pending'
         UNION ALL
         SELECT 
             'requestform' AS type,
@@ -94,15 +106,18 @@ class Priest {
             rf.req_person AS citizen_name,
             s.date AS schedule_date,
             s.start_time AS schedule_time,
-            rf.priest_id,
+            pa.approval_id,
             priest.fullname AS priest_name
         FROM 
             schedule s
         LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
         JOIN req_form rf ON s.schedule_id = rf.schedule_id
-        LEFT JOIN citizen priest ON rf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
-        WHERE rf.priest_id = ?
-            AND rf.pr_status = 'Pending'
+        LEFT JOIN 
+            priest_approval pa ON pa.approval_id = rf.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+        WHERE pa.priest_id = ?
+            AND pa.pr_status = 'Pending'
         ORDER BY schedule_date ASC
         ";
     
@@ -110,7 +125,7 @@ class Priest {
         $stmt->bind_param("iiiii", $priestId, $priestId, $priestId, $priestId, $priestId);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+    
         $appointments = [];
         if ($result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
@@ -122,51 +137,53 @@ class Priest {
     
         return $appointments;
     }
+    
+    
 
     private function updatePendingAppointments() {
         // SQL query for baptismfill
         $sqlBaptism = "
-            UPDATE baptismfill b
-            JOIN schedule s ON b.schedule_id = s.schedule_id
-            SET b.pr_status = NULL, b.priest_id = NULL
-            WHERE b.pr_status = 'Pending'
-            AND (b.assigned_time < NOW() - INTERVAL 24 HOUR);
+            UPDATE priest_approval pa
+           
+            SET pa.pr_status = NULL, pa.priest_id = NULL
+            WHERE pa.pr_status = 'Pending'
+            AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
     
         // SQL query for confirmationfill
         $sqlConfirmation = "
-            UPDATE confirmationfill cf
-            JOIN schedule s ON cf.schedule_id = s.schedule_id
-            SET cf.pr_status = NULL, cf.priest_id = NULL
-            WHERE cf.pr_status = 'Pending'
-            AND (cf.assigned_time < NOW() - INTERVAL 24 HOUR);
+        UPDATE priest_approval pa
+           
+        SET pa.pr_status = NULL, pa.priest_id = NULL
+        WHERE pa.pr_status = 'Pending'
+        AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
     
         // SQL query for marriagefill
         $sqlMarriage = "
-            UPDATE marriagefill mf
-            JOIN schedule s ON mf.schedule_id = s.schedule_id
-            SET mf.pr_status = NULL, mf.priest_id = NULL
-            WHERE mf.pr_status = 'Pending'
-            AND (mf.assigned_time < NOW() - INTERVAL 24 HOUR);
+        UPDATE priest_approval pa
+           
+        SET pa.pr_status = NULL, pa.priest_id = NULL
+        WHERE pa.pr_status = 'Pending'
+        AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
     
         // SQL query for defuctomfill
         $sqlDefuctom = "
-            UPDATE defuctomfill df
-            JOIN schedule s ON df.schedule_id = s.schedule_id
-            SET df.pr_status = NULL, df.priest_id = NULL
-            WHERE df.pr_status = 'Pending'
-            AND (df.assigned_time < NOW() - INTERVAL 24 HOUR);
+        UPDATE priest_approval pa
+           
+        SET pa.pr_status = NULL, pa.priest_id = NULL
+        WHERE pa.pr_status = 'Pending'
+        AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
     
         // SQL query for req_form
         $sqlRequestForm = "
-            UPDATE req_form rf
-            JOIN schedule s ON rf.schedule_id = s.schedule_id
-            SET rf.pr_status = NULL, rf.priest_id = NULL
-            WHERE rf.pr_status = 'Pending'
-            AND (rf.assigned_time < NOW() - INTERVAL 24 HOUR);
+        UPDATE priest_approval pa
+           
+        SET pa.pr_status = NULL, pa.priest_id = NULL
+        WHERE pa.pr_status = 'Pending'
+        AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
     
         // Execute each query separately
@@ -204,25 +221,38 @@ class Priest {
                 return false; // Invalid appointment type
         }
     
-        // Prepare the SQL query to approve
-        $query = "UPDATE $table SET pr_status = 'Approved' WHERE $idField = ?";
-    
-        // Execute the query
-        if ($stmt = $this->conn->prepare($query)) {
+        // Query to get the approval_id associated with the appointment
+        $getApprovalIdQuery = "SELECT approval_id FROM $table WHERE $idField = ?";
+        if ($stmt = $this->conn->prepare($getApprovalIdQuery)) {
             $stmt->bind_param("i", $appointmentId);
-            if ($stmt->execute()) {
-                $stmt->close();
-                return true; // Return true on success
+            $stmt->execute();
+            $stmt->bind_result($approvalId);
+            $stmt->fetch();
+            $stmt->close();
+    
+            if ($approvalId) {
+                // Prepare the SQL query to update the pr_status in the priest_approval table
+                $query = "UPDATE priest_approval SET pr_status = 'Approved' WHERE approval_id = ?";
+                if ($stmt = $this->conn->prepare($query)) {
+                    $stmt->bind_param("i", $approvalId);
+                    if ($stmt->execute()) {
+                        $stmt->close();
+                        return true; // Return true on success
+                    } else {
+                        $stmt->close();
+                        return false; // Return false on failure
+                    }
+                }
             } else {
-                $stmt->close();
-                return false; // Return false on failure
+                return false; // Return false if no approval_id is found
             }
         } else {
             return false; // Return false if query preparation fails
         }
     }
     
-    public function declineAppointment($appointmentId, $appointmentType) {
+    
+    public function declineAppointment($appointmentId, $appointmentType, $reason) {
         // Determine the correct table and ID field based on the appointment type
         switch ($appointmentType) {
             case 'baptism':
@@ -249,27 +279,35 @@ class Priest {
                 return false; // Invalid appointment type
         }
     
-        // Prepare the SQL query to decline
-        $query = "UPDATE $table SET pr_status = 'Declined' WHERE $idField = ?";
-    
-        // Execute the query
-        if ($stmt = $this->conn->prepare($query)) {
+        // Query to get the approval_id associated with the appointment
+        $getApprovalIdQuery = "SELECT approval_id FROM $table WHERE $idField = ?";
+        if ($stmt = $this->conn->prepare($getApprovalIdQuery)) {
             $stmt->bind_param("i", $appointmentId);
-            if ($stmt->execute()) {
-                $stmt->close();
-                return true; // Return true on success
+            $stmt->execute();
+            $stmt->bind_result($approvalId);
+            $stmt->fetch();
+            $stmt->close();
+    
+            if ($approvalId) {
+                // Update the pr_status and pr_description in the priest_approval table
+                $query = "UPDATE priest_approval SET pr_status = 'Declined', pr_reason = ? WHERE approval_id = ?";
+                if ($stmt = $this->conn->prepare($query)) {
+                    $stmt->bind_param("si", $reason, $approvalId);
+                    if ($stmt->execute()) {
+                        $stmt->close();
+                        return true; // Return true on success
+                    } else {
+                        $stmt->close();
+                        return false; // Return false on failure
+                    }
+                }
             } else {
-                $stmt->close();
-                return false; // Return false on failure
+                return false; // Return false if no approval_id is found
             }
         } else {
             return false; // Return false if query preparation fails
         }
-    }
-    
-    
-    
-    
+    }   
     public function getPriestScheduleByDate($priestId, $date) {
         // SQL query to get the schedule for a specific priest to approve or decline
         $sql = "
@@ -282,7 +320,7 @@ class Priest {
             s.date AS schedule_date,
             s.start_time AS schedule_time,
             s.end_time AS schedule_end_time,
-            b.priest_id,
+            pa.priest_id,
             priest.fullname AS priest_name
            
         FROM 
@@ -291,10 +329,13 @@ class Priest {
             JOIN baptismfill b ON s.schedule_id = b.schedule_id
          
 
-            LEFT JOIN citizen priest ON b.priest_id = priest.citizend_id AND priest.user_type = 'Priest'  
+            LEFT JOIN 
+            priest_approval pa ON pa.approval_id = b.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
         WHERE 
-            b.priest_id = ?
-            AND b.pr_status = 'Approved'
+            pa.priest_id = ?
+            AND pa.pr_status = 'Approved'
             AND DATE(s.date) = ?
         
         UNION ALL
@@ -308,7 +349,7 @@ class Priest {
             s.date AS schedule_date,
             s.start_time AS schedule_time,
             s.end_time AS schedule_end_time,
-            cf.priest_id,
+            pa.priest_id,
             priest.fullname AS priest_name
            
          
@@ -317,10 +358,13 @@ class Priest {
             LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
             JOIN confirmationfill cf ON s.schedule_id = cf.schedule_id
            
-            LEFT JOIN citizen priest ON cf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            LEFT JOIN 
+            priest_approval pa ON pa.approval_id = cf.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
         WHERE 
-            cf.priest_id = ?
-            AND cf.pr_status = 'Approved'
+        pa.priest_id = ?
+        AND pa.pr_status = 'Approved'
             AND DATE(s.date) = ?
         
         UNION ALL
@@ -334,17 +378,20 @@ class Priest {
             s.date AS schedule_date,
             s.start_time AS schedule_time,
             s.end_time AS schedule_end_time,
-            mf.priest_id,
+            pa.priest_id,
             priest.fullname AS priest_name
            
         FROM 
             schedule s
             LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
             JOIN marriagefill mf ON s.schedule_id = mf.schedule_id
-            LEFT JOIN citizen priest ON mf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            LEFT JOIN 
+            priest_approval pa ON pa.approval_id = mf.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
         WHERE 
-            mf.priest_id = ?
-            AND mf.pr_status = 'Approved'
+        pa.priest_id = ?
+        AND pa.pr_status = 'Approved'
             AND DATE(s.date) = ?
         
         UNION ALL
@@ -358,7 +405,7 @@ class Priest {
             s.date AS schedule_date,
             s.start_time AS schedule_time,
             s.end_time AS schedule_end_time,
-            df.priest_id,
+            pa.priest_id,
             priest.fullname AS priest_name
            
            
@@ -367,10 +414,13 @@ class Priest {
             LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
             JOIN defuctomfill df ON s.schedule_id = df.schedule_id
 
-            LEFT JOIN citizen priest ON df.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            LEFT JOIN 
+            priest_approval pa ON pa.approval_id = df.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
         WHERE 
-            df.priest_id = ?
-            AND df.pr_status = 'Approved'
+        pa.priest_id = ?
+        AND pa.pr_status = 'Approved'
             AND DATE(s.date) = ?
             
 
@@ -385,7 +435,7 @@ class Priest {
                 s.date AS schedule_date,
                 s.start_time AS schedule_time,
                 s.end_time AS schedule_end_time,
-                rf.priest_id,
+                pa.priest_id,
                 priest.fullname AS priest_name
                
                
@@ -394,11 +444,69 @@ class Priest {
                 LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
                 JOIN req_form rf ON s.schedule_id = rf.schedule_id
     
-                LEFT JOIN citizen priest ON rf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+                LEFT JOIN 
+                priest_approval pa ON pa.approval_id = rf.approval_id
+            LEFT JOIN 
+                citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
             WHERE 
-                rf.priest_id = ?
-                AND rf.pr_status = 'Approved'
+            pa.priest_id = ?
+            AND pa.pr_status = 'Approved'
                 AND DATE(s.date) = ?
+
+                UNION ALL
+        
+                SELECT 
+                an.announcement_id AS id,
+                'Inside' AS roles,
+                an.event_type AS Event_Name,
+                'NULL' AS citizen_name,
+                s.date AS schedule_date,
+                s.start_time AS schedule_time,
+                s.end_time AS schedule_end_time,
+                pa.priest_id,
+                priest.fullname AS priest_name
+            FROM 
+                schedule s
+            JOIN 
+                announcement an ON s.schedule_id = an.schedule_id
+            LEFT JOIN 
+                priest_approval pa ON pa.approval_id = an.approval_id
+            LEFT JOIN 
+                citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            WHERE 
+                pa.priest_id = ? 
+                AND pa.pr_status = 'Approved' 
+             AND DATE(s.date) = ?
+                    
+        UNION ALL
+        
+        SELECT 
+         
+            ms.mass_id AS id,
+            'Mass' AS roles,
+           ms.mass_title AS Event_Name,
+            'Mass' AS citizen_name,
+            s.date AS schedule_date,
+            s.start_time AS schedule_time,
+            s.end_time AS schedule_end_time,
+            pa.priest_id,
+            priest.fullname AS priest_name
+           
+           
+        FROM 
+            schedule s
+            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
+            JOIN mass_schedule ms ON s.schedule_id = ms.schedule_id
+
+            LEFT JOIN 
+            priest_approval pa ON pa.approval_id = ms.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+        WHERE 
+        pa.priest_id = ?
+        AND pa.pr_status = 'Approved'
+            AND DATE(s.date) = ?
+            
                 
         
                 ORDER BY schedule_date ASC, schedule_time ASC
@@ -407,7 +515,7 @@ class Priest {
         // Prepare and execute the statement
         $stmt = $this->conn->prepare($sql);
         // Bind priest_id and date (four times each, for each UNION)
-        $stmt->bind_param("isisisisis", $priestId, $date, $priestId, $date, $priestId, $date, $priestId, $date,$priestId, $date);
+        $stmt->bind_param("isisisisisisis", $priestId, $date, $priestId, $date, $priestId, $date, $priestId, $date,$priestId, $date,$priestId, $date,$priestId, $date);
         $stmt->execute();
         $result = $stmt->get_result();
     

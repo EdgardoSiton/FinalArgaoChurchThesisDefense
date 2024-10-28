@@ -13,33 +13,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (empty($errors)) {
             // Instantiate Staff class
             $staff = new Staff($conn);
-
+    
             // Function to convert time to military format
             function formatToMilitaryTime($time) {
                 $dateTime = DateTime::createFromFormat('g:i A', $time);
                 return $dateTime ? $dateTime->format('H:i') : null; // Handle invalid time input
             }
-
+    
             // Schedule data for announcement
             $scheduleData = [
                 'date' => $_POST['date'],
                 'start_time' => formatToMilitaryTime($_POST['start_time']),
                 'end_time' => formatToMilitaryTime($_POST['end_time'])
             ];
-
-            $startTime = $_POST['start_times'] ?? null; // This will contain the 24-hour format time
-            $endTime = $_POST['end_times'] ?? null; // This will also be in 24-hour format
-            
-            // Check if the values are valid
-            if ($startTime && $endTime) {
-                $scheduleDatas = [
-                    'date' => $_POST['date'] ?? '',
-                    'start_time' => $startTime, // Use the value directly from the dropdown
-                    'end_time' => $endTime // Same for end_time
-                ];
-            
-                // Now you can proceed with your database insertions using the $scheduleData
-            }
+    
+            // Prepare schedule data for seminar
+            $scheduleDatas = [
+                'date' => $_POST['dates'] ?? '',
+                'start_time' => $_POST['start_times'], // Use formatted value
+                'end_time' =>$_POST['end_times']
+            ];
+    
             // Prepare announcement data
             $announcementData = [
                 'event_type' => $_POST['eventType'],
@@ -47,12 +41,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 'description' => $_POST['description'],
                 'date_created' => date('Y-m-d H:i:s'),
                 'capacity' => $_POST['capacity'],
-                'priest_id' => $_POST['priest_id']
+                'speaker_ann' => $_POST['eventspeaker'],
             ];
-
-            // Call the addAnnouncement method
-            $announcementResult = $staff->addAnnouncement($announcementData, $scheduleData, $scheduleDatas);
-
+    
+            // Capture approval_id (if you need to pass it)
+            $scheduleDatass = [
+                'approval_id' => $_POST['priest_id'], // Corrected to use a comma instead of a semicolon
+            ];
+    
+            // Call the addAnnouncement method, passing the necessary parameters
+            $announcementResult = $staff->addAnnouncement($announcementData, $scheduleData, $scheduleDatas, $scheduleDatass['approval_id']);
+    
             // Check if the insertion was successful
             if ($announcementResult) {
                 // Redirect to a success page or display success message
@@ -68,7 +67,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 echo '<script>alert("' . $error . '");</script>';
             }
         }
-    }else if ($addcalendar){
+    }
+    else if ($addcalendar){
 // Create an instance of the Staff class
 $staff = new Staff($conn);
 

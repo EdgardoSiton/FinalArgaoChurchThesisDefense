@@ -4,13 +4,25 @@ $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
 require_once '../../Model/db_connection.php';
 require_once '../../Model/staff_mod.php';
-
-$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
-
 $staff = new Staff($conn);
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
 
 if (!$loggedInUserEmail) {
-  header("Location: login.php");
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
   exit();
 }
 $announcements = $staff->getAnnouncements(); // Fetch all announcements
@@ -334,6 +346,7 @@ We invite you to check back regularly to stay updated on the vibrant life of our
     </div>
     <!-- Testimonial End -->
     <!-- FAQs Start -->
+    
  <div class="container-fluid faq-section bg-light py-5">
             <div class="container py-5">
                 <div class="row g-5 align-items-center">
@@ -403,37 +416,6 @@ We invite you to check back regularly to stay updated on the vibrant life of our
     ></a>
     <link rel="stylesheet" href="../assets/css/login.css" />
     <script>
-
-
-  // Show the pop-up if it hasn't been shown before
-  document.addEventListener("DOMContentLoaded", function () {
-   if (!localStorage.getItem("ratingPopupShown")) {
-      document.getElementById("ratingPopup").style.display = "flex";
-   }
-});
-
-// Close the pop-up when clicking the 'x'
-document.getElementById("closePopup").addEventListener("click", function () {
-   document.getElementById("ratingPopup").style.display = "none";
-});
-
-// Handle form submission and close the pop-up
-document.getElementById("ratingForm").addEventListener("submit", function (event) {
-   event.preventDefault();
-
-   // Save to localStorage to avoid showing the pop-up again
-   localStorage.setItem("ratingPopupShown", "true");
-
-   // Optionally, send the rating and comment to the server here
-   let rating = document.getElementById("rating").value;
-   let comment = document.getElementById("comment").value;
-   
-   console.log("Rating:", rating, "Comment:", comment); // Replace with actual submission logic
-
-   document.getElementById("ratingPopup").style.display = "none";
-});
-
-
       document.addEventListener('DOMContentLoaded', function() {
     <?php
     if (isset($_SESSION['status']) && $_SESSION['status'] == 'success') {

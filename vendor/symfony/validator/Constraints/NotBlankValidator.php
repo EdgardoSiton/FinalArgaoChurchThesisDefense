@@ -22,7 +22,7 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 class NotBlankValidator extends ConstraintValidator
 {
     /**
-     * @return void
+     * {@inheritdoc}
      */
     public function validate(mixed $value, Constraint $constraint)
     {

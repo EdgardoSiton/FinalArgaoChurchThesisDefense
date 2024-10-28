@@ -32,6 +32,27 @@ if ($weddingffill_id) {
     echo "No baptism ID provided.";
     $scheduleId = null;
 }
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -164,6 +185,10 @@ small {
                         <label for="eventTitle">Payable Amount</label>
                         <input type="number" class="form-control" id="eventTitle" name="eventTitle" placeholder="Enter Amount">
                     </div>
+                    <div class="form-group">
+                        <label for="eventTitle1">Seminar Speaker</label>
+                        <input type="text" class="form-control" id="eventTitle1" name="eventspeaker" placeholder="Enter Amount">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -220,35 +245,48 @@ small {
     <div class="card-header">
         <div class="card-title">Wedding View Information Form</div>
     </div>
-    <div class="col-md-6 col-lg-4">
+    <div class="row"> <!-- Ensure row is wrapping both columns -->
     <!-- Priest Name Section -->
-    <div class="form-group">
-    <label for="priestName">Priest Name</label>
-    <div class="d-flex align-items-center">
-        <input type="text" class="form-control" id="priestName" name="priestName" value="<?php echo $Priest; ?>" readonly />
+    <div class="col-md-6 col-lg-4">
+        <div class="form-group">
+            <label for="priestName">Priest Name</label>
+            <div class="d-flex align-items-center">
+                <input type="text" class="form-control" id="priestName" name="priestName" value="<?php echo $Priest; ?>" readonly />
 
-        <?php if ($Pending == 'Pending'): ?>
-            <!-- If the priest is pending, show a disabled button -->
-            <button type="button" class="btn btn-warning" disabled>Waiting for Approval</button>
+                <?php if ($Pending == 'Pending'): ?>
+                    <!-- If the priest is pending, show a disabled button -->
+                    <button type="button" class="btn btn-warning" disabled>Waiting for Approval</button>
 
-        <?php elseif ($Pending == 'Approved'): ?>
-            <!-- If the priest is accepted, display a message instead of a button -->
-            <span class="text-success">Has been Approved</span>
+                <?php elseif ($Pending == 'Approved'): ?>
+                    <!-- If the priest is accepted, display a message instead of a button -->
+                    <span class="text-success">Has been Approved</span>
 
+                <?php elseif ($Pending == 'Declined'): ?>
+                    <!-- If the priest is declined, enable the button to trigger the modal -->
+                    <button type="button" data-toggle="modal" data-target="#myModals" class="btn btn-danger">Priest Declined - Click to Reassign</button>
 
-            <?php elseif ($Pending == 'Declined'): ?>
-            <!-- If the priest is declined, enable the button to trigger the modal -->
-            <button type="button" data-toggle="modal" data-target="#myModals" class="btn btn-danger">Priest Declined - Click to Reassign</button>
-        
-        
-            <?php else: ?>
-            <!-- Default button state (e.g., if no status is set) -->
-            <button type="button" data-toggle="modal" data-target="#myModals" class="btn btn-success">Priest Assign </button>
-             
+                <?php else: ?>
+                    <!-- Default button state (e.g., if no status is set) -->
+                    <button type="button" data-toggle="modal" data-target="#myModals" class="btn btn-success">Priest Assign</button>
+
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reason for Decline Section -->
+    <div class="col-md-6 col-lg-4">
+        <?php if ($Pending === 'Declined') : ?>
+            <!-- Display the reason for declining -->
+            <div class="form-group">
+                <label for="declineReason">Reason for Decline:</label>
+                <textarea class="form-control" id="declineReason" rows="3" readonly><?php echo htmlspecialchars($declineReason); ?></textarea>
+            </div>
         <?php endif; ?>
     </div>
 </div>
-</div>
+
+
 
 
     <div class="card-body">

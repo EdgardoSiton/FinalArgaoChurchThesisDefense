@@ -23,8 +23,24 @@ if (isset($_GET['appointment_id'])) {
         }
     }
 }
+$req_category = isset($pendingItem['type']) ? $pendingItem['type'] : '';
+$req_name_pamisahan = isset($pendingItem['req_name_pamisahan']) ? $pendingItem['req_name_pamisahan'] : '';
+$nameParts = explode(' ', $req_name_pamisahan);
+$first_name = isset($nameParts[0]) ? $nameParts[0] : '';
+$middle_name = isset($nameParts[1]) ? $nameParts[1] : ''; // Assumes the middle name is in the second position
+$last_name = isset($nameParts[2]) ? $nameParts[2] : ''; 
+$req_person = isset($pendingItem['citizen_name']) ? $pendingItem['citizen_name'] : '';
+$namePartsReq = explode(' ', $req_person);
+$cal_date = isset($pendingItem['cal_date']) ? $pendingItem['cal_date'] : '';
+$first_name_req = isset($namePartsReq[0]) ? $namePartsReq[0] : '';
+$middle_name_req = isset($namePartsReq[1]) ? $namePartsReq[1] : ''; // Assuming middle name is in the second position
+$last_name_req = isset($namePartsReq[2]) ? $namePartsReq[2] : ''; 
+$req_person = isset($pendingItem['req_person']) ? $pendingItem['req_person'] : '';
 $reference_number = $pendingItem['reference_number'] ?? '';
+$req_address = isset($pendingItem['req_address']) ? $pendingItem['req_address'] : '';
 // Initialize variables common to all events
+$req_chapel = isset($pendingItem['req_chapel']) ? $pendingItem['req_chapel'] : '';
+$req_pnumber = isset($pendingItem['req_pnumber']) ? $pendingItem['req_pnumber'] : '';
 $startTime = isset($pendingItem['schedule_start_time']) ? date('h:i A', strtotime($pendingItem['schedule_start_time'])) : '';
 $endTime = isset($pendingItem['schedule_start_time']) ? date('h:i A', strtotime($pendingItem['schedule_end_time'])) : '';
 
@@ -35,10 +51,17 @@ switch ($eventName) {
     case 'Baptism':
         $dateOfBirth = $pendingItem['c_date_birth'] ?? '';
         break;
+        case 'MassBaptism':
+            $dateOfBirth = $pendingItem['c_date_birth'] ?? '';
+            break;
     case 'Confirmation':
         $dateOfBirth = $pendingItem['c_date_birth'] ?? '';
         $pbirth = $pendingItem['date_of_baptism'] ?? '';
         break;
+        case 'MassConfirmation':
+            $dateOfBirth = $pendingItem['c_date_birth'] ?? '';
+            $pbirth = $pendingItem['date_of_baptism'] ?? '';
+            break;
     case 'Funeral':
         $dateOfBirth = $pendingItem['date_of_birth'] ?? '';
         $pbirth = $pendingItem['date_of_death'] ?? '';
@@ -47,6 +70,10 @@ switch ($eventName) {
         $dateOfBirth = $pendingItem['groom_dob'] ?? '';
         $pbirth = $pendingItem['bride_dob'] ?? '';
         break;
+        case 'MassWedding':
+            $dateOfBirth = $pendingItem['groom_dob'] ?? '';
+            $pbirth = $pendingItem['bride_dob'] ?? '';
+            break;
 }
 
 // Convert dates to day, month, and year components
@@ -73,7 +100,9 @@ $firstnames = $middlenames = $lastnames = '';
 $fullname = ''; 
 switch ($eventName) {
     case 'Baptism':
-    case 'Confirmation':
+        case 'MassBaptism':
+    case 'MassConfirmation':
+        case 'Confirmation':
         $fullname = cleanName($pendingItem['citizen_name'] ?? '');
         break;
     case 'Funeral':
@@ -124,5 +153,6 @@ if ($eventName === 'Wedding') {
     } else {
         $firstnames = $brideNames[0];
     }
+    
 }
 ?>

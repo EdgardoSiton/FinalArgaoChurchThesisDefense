@@ -14,7 +14,6 @@ namespace Symfony\Component\Validator\Constraints;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
-use Symfony\Component\Validator\Exception\LogicException;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 use Symfony\Component\Validator\Exception\UnexpectedValueException;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
@@ -32,15 +31,15 @@ class NotCompromisedPasswordValidator extends ConstraintValidator
 {
     private const DEFAULT_API_ENDPOINT = 'https://api.pwnedpasswords.com/range/%s';
 
-    private HttpClientInterface $httpClient;
+    private $httpClient;
     private string $charset;
     private bool $enabled;
     private string $endpoint;
 
-    public function __construct(?HttpClientInterface $httpClient = null, string $charset = 'UTF-8', bool $enabled = true, ?string $endpoint = null)
+    public function __construct(HttpClientInterface $httpClient = null, string $charset = 'UTF-8', bool $enabled = true, string $endpoint = null)
     {
         if (null === $httpClient && !class_exists(HttpClient::class)) {
-            throw new LogicException(sprintf('The "%s" class requires the "HttpClient" component. Try running "composer require symfony/http-client".', self::class));
+            throw new \LogicException(sprintf('The "%s" class requires the "HttpClient" component. Try running "composer require symfony/http-client".', self::class));
         }
 
         $this->httpClient = $httpClient ?? HttpClient::create();
@@ -50,7 +49,7 @@ class NotCompromisedPasswordValidator extends ConstraintValidator
     }
 
     /**
-     * @return void
+     * {@inheritdoc}
      *
      * @throws ExceptionInterface
      */
@@ -82,7 +81,7 @@ class NotCompromisedPasswordValidator extends ConstraintValidator
         $url = sprintf($this->endpoint, $hashPrefix);
 
         try {
-            $result = $this->httpClient->request('GET', $url, ['headers' => ['Add-Padding' => 'true']])->getContent();
+            $result = $this->httpClient->request('GET', $url)->getContent();
         } catch (ExceptionInterface $e) {
             if ($constraint->skipOnError) {
                 return;

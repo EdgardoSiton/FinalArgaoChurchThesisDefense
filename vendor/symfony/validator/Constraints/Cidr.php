@@ -29,7 +29,7 @@ class Cidr extends Constraint
     public const INVALID_CIDR_ERROR = '5649e53a-5afb-47c5-a360-ffbab3be8567';
     public const OUT_OF_RANGE_ERROR = 'b9f14a51-acbd-401a-a078-8c6b204ab32f';
 
-    protected const ERROR_NAMES = [
+    protected static $errorNames = [
         self::INVALID_CIDR_ERROR => 'INVALID_CIDR_ERROR',
         self::OUT_OF_RANGE_ERROR => 'OUT_OF_RANGE_VIOLATION',
     ];
@@ -39,11 +39,6 @@ class Cidr extends Constraint
         Ip::V4 => 32,
         Ip::V6 => 128,
     ];
-
-    /**
-     * @deprecated since Symfony 6.1, use const ERROR_NAMES instead
-     */
-    protected static $errorNames = self::ERROR_NAMES;
 
     public $version = Ip::ALL;
 
@@ -56,17 +51,17 @@ class Cidr extends Constraint
     public $netmaskMax;
 
     public function __construct(
-        ?array $options = null,
-        ?string $version = null,
-        ?int $netmaskMin = null,
-        ?int $netmaskMax = null,
-        ?string $message = null,
-        ?array $groups = null,
+        array $options = null,
+        string $version = null,
+        int $netmaskMin = null,
+        int $netmaskMax = null,
+        string $message = null,
+        array $groups = null,
         $payload = null
     ) {
         $this->version = $version ?? $options['version'] ?? $this->version;
 
-        if (!\array_key_exists($this->version, self::NET_MAXES)) {
+        if (!\in_array($this->version, array_keys(self::NET_MAXES))) {
             throw new ConstraintDefinitionException(sprintf('The option "version" must be one of "%s".', implode('", "', array_keys(self::NET_MAXES))));
         }
 

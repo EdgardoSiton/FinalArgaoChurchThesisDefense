@@ -1,11 +1,11 @@
 <?php
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-
+use Twilio\Rest\Client;
 require_once  __DIR__ . '/../Model/db_connection.php';
 require_once  __DIR__ . '/../Model/staff_mod.php'; // Ensure this uses require_once
 require_once __DIR__ . '/../Controller/phpmailer/src/PHPMailer.php'; // Ensure this uses require_once
-
+require_once __DIR__ . '/../Controller/twilio-php-main/src/Twilio/autoload.php';
 require_once  __DIR__ . '/../vendor/autoload.php';
 class User {
     
@@ -14,6 +14,106 @@ class User {
     public function __construct($conn) {
         $this->conn = $conn;
     }
+    public function archiveCitizen($citizen_id, $status) {
+        // Use the status passed to either archive or unarchive
+        $sql = "UPDATE citizen SET r_status = ? WHERE citizend_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('si', $status, $citizen_id);  // 's' for status, 'i' for citizen_id
+        
+        if ($stmt->execute()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    
+    
+    public function getPriestAccount($statusFilter = '') {
+        // Modify the SQL query to filter by r_status dynamically
+        $sql = "SELECT `citizend_id`, `fullname`, `email`, `gender`, `phone`, `c_date_birth`, `age`, `address`, `valid_id`, `user_type`, `r_status`, `c_current_time`
+                FROM `citizen` 
+                WHERE `user_type` = 'Priest'";
+        
+        // Add condition based on the status filter
+        if ($statusFilter === 'Unactive') {
+            $sql .= " AND `r_status` = 'Unactive'";
+        } else {
+            $sql .= " AND `r_status` = 'Active'";
+        }
+        
+        $sql .= " ORDER BY `c_current_time` ASC";
+        
+        // Prepare the statement
+        $stmt = $this->conn->prepare($sql);
+        
+        if (!$stmt) {
+            die('Prepare failed: ' . $this->conn->error);
+        }
+        
+        // Execute the statement
+        if (!$stmt->execute()) {
+            die('Execute failed: ' . $stmt->error);
+        }
+        
+        // Get the result set
+        $result = $stmt->get_result();
+        
+        // Fetch all results as an associative array
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        
+        // Close the statement
+        $stmt->close();
+        
+        // Return the result
+        return $data;
+    }
+    public function getStaffAccount($statusFilter = '') {
+        // Modify the SQL query to filter by r_status dynamically
+        $sql = "SELECT `citizend_id`, `fullname`, `email`, `gender`, `phone`, `c_date_birth`, `age`, `address`, `valid_id`, `user_type`, `r_status`, `c_current_time`
+                FROM `citizen` 
+                WHERE `user_type` = 'Staff'";
+        
+        // Add condition based on the status filter
+        if ($statusFilter === 'Unactive') {
+            $sql .= " AND `r_status` = 'Unactive'";
+        } else {
+            $sql .= " AND `r_status` = 'Active'";
+        }
+        
+        $sql .= " ORDER BY `c_current_time` ASC";
+        
+        // Prepare the statement
+        $stmt = $this->conn->prepare($sql);
+        
+        if (!$stmt) {
+            die('Prepare failed: ' . $this->conn->error);
+        }
+        
+        // Execute the statement
+        if (!$stmt->execute()) {
+            die('Execute failed: ' . $stmt->error);
+        }
+        
+        // Get the result set
+        $result = $stmt->get_result();
+        
+        // Fetch all results as an associative array
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        
+        // Close the statement
+        $stmt->close();
+        
+        // Return the result
+        return $data;
+    }
+    
     public function getAccount() {
         // Prepare the SQL query with ORDER BY clause for descending order
         $sql = "SELECT `citizend_id`, `fullname`, `email`, `gender`, `phone`, `c_date_birth`, `age`, `address`, `valid_id`, `user_type`, `r_status`, `c_current_time`
@@ -81,6 +181,33 @@ class User {
         // Return the result
         return $data;
     }
+    public function sendSms($toPhoneNumber, $messageBody) {
+        // Your Twilio credentials (replace with your actual credentials)
+        $accountSid = 'AC7ef9e279eebfda753ed9f67ae1a77710';
+        $authToken = '40464522e94c2cdb6296d701bbe36a51';
+        $twilioPhoneNumber = '+17082776875';
+    
+        try {
+            // Initialize the Twilio client
+            $client = new Client($accountSid, $authToken);
+    
+            // Send the SMS
+            $client->messages->create(
+                $toPhoneNumber, // Destination phone number
+                [
+                    'from' => $twilioPhoneNumber, // Twilio phone number
+                    'body' => $messageBody // SMS body
+                ]
+            );
+    
+            echo "SMS sent successfully to {$toPhoneNumber}.";
+    
+        } catch (Exception $e) {
+            // Log error and display failure message
+            error_log("Failed to send SMS: " . $e->getMessage());
+            echo "Error sending SMS: " . $e->getMessage();
+        }
+    }
     
     private function sendEmail($email, $citizen_name, $subject, $body) {
         
@@ -133,7 +260,12 @@ class User {
             if ($contactInfo) {
                 $this->sendEmail($contactInfo['email'], $contactInfo['fullname'], "Your account has been approved.", 
                     "Dear {$contactInfo['fullname']},<br><br>Your account has been successfully approved.<br>Thank you for your patience.<br>");
+                
+                // Send SMS notification with personalized message
+                $smsMessage = "Dear {$contactInfo['fullname']}, Your account has been successfully approved. Thank you for your patience.";
+                $this->sendSms($contactInfo['phone'], $smsMessage);
             }
+            
             return true;
         } else {
             return false;
@@ -146,6 +278,7 @@ class User {
         if ($contactInfo) {
             $email = $contactInfo['email'];
             $fullname = $contactInfo['fullname'];
+            $phone = $contactInfo['phone']; // Assuming you have the phone number stored as 'phone'
         } else {
             return false; // Citizen not found
         }
@@ -158,11 +291,17 @@ class User {
             // Send email after successful deletion
             $this->sendEmail($email, $fullname, "Your account has been deleted.", 
                 "Dear {$fullname},<br><br>Your account has been deleted.<br>If you have any questions, please contact us.<br>");
+            
+            // Send SMS after successful deletion
+            $smsMessage = "Dear {$fullname}, Your account has been deleted. If you have any questions, please contact us.";
+            $this->sendSms($phone, $smsMessage);
+    
             return true;
         } else {
             return false;
         }
     }
+    
     
 
     
@@ -219,7 +358,7 @@ class User {
     
     public function getUserInfo($email) {
         $email = mysqli_real_escape_string($this->conn, $email);
-        $query = "SELECT citizend_id, user_type, r_status, fullname FROM citizen WHERE email = '$email'";
+        $query = "SELECT citizend_id, user_type, r_status, fullname,gender FROM citizen WHERE email = '$email'";
         $result = mysqli_query($this->conn, $query);
         
         // Check if query was successful and fetch user info
@@ -229,7 +368,8 @@ class User {
                 'citizend_id' => $user['citizend_id'] ?? null,
                 'user_type' => $user['user_type'] ?? null,
                 'r_status' => $user['r_status'] ?? null,
-                'fullname' => $user['fullname'] ?? null
+                'fullname' => $user['fullname'] ?? null,
+                'gender' => $user['gender'] ?? null,
             ];
         } else {
             return null;
@@ -332,6 +472,133 @@ class User {
         }
     }
     
+    public function registerUsers($data) {
+        // Automatically set user_type to 'Priest'
+        $data['user_type'] = 'Priest';
+        $data['r_status'] = 'Active';
+    
+        // Combine first name, last name, and middle name into a single fullname field
+        $data['fullname'] = trim($data['first_name'] . ' ' . $data['middle_name'] . ' ' . $data['last_name']);
+    
+      
+            $year = intval($data['year']);
+            $month = intval($data['month']);
+            $day = intval($data['day']);
+            
+         
+                $data['c_date_birth'] = "$year-$month-$day";
+         
+               
+       
+    
+        // Sanitize input data
+        $sanitizedData = $this->sanitizeData($data);
+    
+        // Calculate age
+        $sanitizedData['age'] = $this->calculateAge($sanitizedData['c_date_birth']);
+    
+        // Hash the password
+        $sanitizedData['password'] = password_hash($sanitizedData['password'], PASSWORD_DEFAULT);
+    
+        // Prepare SQL query with placeholders
+        $query = "INSERT INTO citizen (user_type,r_status, fullname, address, gender, c_date_birth, age, email, phone, password) 
+                  VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, ?)";
+    
+        // Use prepared statements to prevent SQL injection
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param(
+            'ssssssssss',
+            $sanitizedData['user_type'],
+            $sanitizedData['r_status'],
+            $sanitizedData['fullname'],
+            $sanitizedData['address'],
+            $sanitizedData['gender'],
+            $sanitizedData['c_date_birth'],
+            $sanitizedData['age'],
+            $sanitizedData['email'],
+            $sanitizedData['phone'],
+            $sanitizedData['password']
+        );
+    
+        if ($stmt->execute()) {
+            // Insert notification record
+            $notificationQuery = "INSERT INTO notifications (type, message) VALUES ('user_registration', ?)";
+            $notificationStmt = $this->conn->prepare($notificationQuery);
+            $notificationStmt->bind_param('s', $sanitizedData['fullname']);
+    
+            if ($notificationStmt->execute()) {
+                return "Registration successful and notification sent";
+            } else {
+                return "Registration successful, but failed to send notification";
+            }
+        } else {
+            return "Registration failed";
+        }
+    }
+ 
+    public function registerUserss($data) {
+        // Automatically set user_type to 'Priest'
+        $data['user_type'] = 'Staff';
+        $data['r_status'] = 'Active';
+    
+        // Combine first name, last name, and middle name into a single fullname field
+        $data['fullname'] = trim($data['first_name'] . ' ' . $data['middle_name'] . ' ' . $data['last_name']);
+    
+      
+            $year = intval($data['year']);
+            $month = intval($data['month']);
+            $day = intval($data['day']);
+            
+         
+                $data['c_date_birth'] = "$year-$month-$day";
+         
+               
+       
+    
+        // Sanitize input data
+        $sanitizedData = $this->sanitizeData($data);
+    
+        // Calculate age
+        $sanitizedData['age'] = $this->calculateAge($sanitizedData['c_date_birth']);
+    
+        // Hash the password
+        $sanitizedData['password'] = password_hash($sanitizedData['password'], PASSWORD_DEFAULT);
+    
+        // Prepare SQL query with placeholders
+        $query = "INSERT INTO citizen (user_type,r_status, fullname, address, gender, c_date_birth, age, email, phone, password) 
+                  VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, ?)";
+    
+        // Use prepared statements to prevent SQL injection
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param(
+            'ssssssssss',
+            $sanitizedData['user_type'],
+            $sanitizedData['r_status'],
+            $sanitizedData['fullname'],
+            $sanitizedData['address'],
+            $sanitizedData['gender'],
+            $sanitizedData['c_date_birth'],
+            $sanitizedData['age'],
+            $sanitizedData['email'],
+            $sanitizedData['phone'],
+            $sanitizedData['password']
+        );
+    
+        if ($stmt->execute()) {
+            // Insert notification record
+            $notificationQuery = "INSERT INTO notifications (type, message) VALUES ('user_registration', ?)";
+            $notificationStmt = $this->conn->prepare($notificationQuery);
+            $notificationStmt->bind_param('s', $sanitizedData['fullname']);
+    
+            if ($notificationStmt->execute()) {
+                return "Registration successful and notification sent";
+            } else {
+                return "Registration successful, but failed to send notification";
+            }
+        } else {
+            return "Registration failed";
+        }
+    }
     
     
     private function calculateAge($birthday) {
@@ -351,6 +618,19 @@ class User {
         $query = "SELECT * FROM citizen WHERE email = '$email'";
         $result = mysqli_query($this->conn, $query);
         return mysqli_num_rows($result) > 0;
+    }
+    public function checkEmailExistss($email) {
+        $sql = "SELECT `citizend_id`, `fullname`, `email` FROM `citizen` WHERE `email` = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            return true; // Email exists
+        } else {
+            return false; // Email does not exist
+        }
     }
 }
 ?>

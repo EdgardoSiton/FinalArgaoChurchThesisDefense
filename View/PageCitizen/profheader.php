@@ -1,4 +1,25 @@
+<?php
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
 
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+    header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -98,7 +119,7 @@
               <a href="appointmentseminar.php">My Appointment for Seminar</a>
             </li>
             <li class="breadcrumb-item">
-              <a href="history.php">My Booking History</a>
+              <a href="appointmentseminarcomplete.php">My Booking History</a>
             </li>
           
           </ol>

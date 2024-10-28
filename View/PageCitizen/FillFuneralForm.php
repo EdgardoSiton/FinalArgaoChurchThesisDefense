@@ -7,7 +7,28 @@ $regId = $_SESSION['citizend_id'];
 require_once '../../Model/db_connection.php';
 require_once '../../Model/staff_mod.php';
 $staff = new Staff($conn);
-$announcements = $staff->getAnnouncements();
+
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); 
+  exit();
+}
+if ($r_status === "Admin") {
+    header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); 
+  exit();
+}
+
+
+
 ?>
 
 <!DOCTYPE html>
@@ -183,10 +204,7 @@ small {
             <div class="form-group">
                 <label for="firstname">Firstname of Deceased Person</label>
                 <input type="text" class="form-control" id="firstname" name="firstname" placeholder="Enter Firstname"
-                <?php
-            if (isset($userDetails)) {
-                echo 'value="' . htmlspecialchars($userDetails['firstname']) . '"';
-            } ?> />
+        />
                 <div id="firstnameError" class="error text-danger"></div>
             </div>
 
@@ -194,11 +212,7 @@ small {
             <div class="form-group">
                 <label for="lastname">Last Name of Deceased Person</label>
                 <input type="text" class="form-control" id="lastname" name="lastname" placeholder="Enter Lastname"
-                <?php
-            if (isset($userDetails)) {
-                echo 'value="' . htmlspecialchars($userDetails['lastname']) . '"';
-            }
-            ?> />
+              />
                 <div id="lastnameError" class="error text-danger"></div>
             </div>
 
@@ -206,11 +220,7 @@ small {
             <div class="form-group">
                 <label for="middlename">Middle Name of Deceased Person</label>
                 <input type="text" class="form-control" id="middlename" name="middlename" placeholder="Enter Middlename"
-                <?php
-            if (isset($userDetails)) {
-                echo 'value="' . htmlspecialchars($userDetails['middlename']) . '"';
-            }
-            ?> />
+               />
                 <div id="middlenameError" class="error text-danger"></div>
             </div>
 
@@ -232,7 +242,7 @@ small {
                             name="d_gender"
                             id="flexRadioDefault1"
                             value="Male"
-                            <?php echo (isset($userDetails) && $userDetails['gender'] == 'Male') ? 'checked' : ''; ?>
+                          
                         />
                         <label class="form-check-label" for="flexRadioDefault1">Male</label>
                     </div>
@@ -243,7 +253,7 @@ small {
                             name="d_gender"
                             id="flexRadioDefault2"
                             value="Female"
-                            <?php echo (isset($userDetails) && $userDetails['gender'] == 'Female') ? 'checked' : ''; ?>
+                           
                         />
                         <label class="form-check-label" for="flexRadioDefault2">Female</label>
                     </div>
@@ -320,17 +330,28 @@ small {
 
             <!-- Father's Fullname -->
             <div class="form-group">
-                <label for="father_name">Father's Fullname</label>
-                <input type="text" class="form-control" id="father_name" name="father_fullname" placeholder="Enter Father's Fullname" />
-                <div id="fatherNameError" class="error text-danger"></div>
-            </div>
+    <label for="father_name">Father's Fullname</label>
+    <input type="text" class="form-control" id="father_name" name="father_fullname" placeholder="Enter Father's Fullname"
+        <?php
+        // Display father's name if user is male
+        if (isset($userDetails) && $userDetails['gender'] === 'Male') {
+            echo 'value="' . htmlspecialchars($userDetails['fullname']) . '"';
+        }
+        ?> />
+    <span class="error text-danger" id="fatherNameError"></span>
+</div>
 
-            <!-- Mother's Fullname -->
-            <div class="form-group">
-                <label for="mother_name">Mother's Fullname</label>
-                <input type="text" class="form-control" id="mother_name" name="mother_fullname" placeholder="Enter Mother's Fullname" />
-                <div id="motherNameError" class="error text-danger"></div>
-            </div>
+<div class="form-group">
+    <label for="mother_name">Mother's Fullname</label>
+    <input type="text" class="form-control" id="mother_name" name="mother_fullname" placeholder="Enter Mother's Fullname"
+        <?php
+        // Display mother's name if user is female
+        if (isset($userDetails) && $userDetails['gender'] === 'Female') {
+            echo 'value="' . htmlspecialchars($userDetails['fullname']) . '"';
+        }
+        ?> />
+    <span class="error text-danger" id="motherNameError"></span>
+</div>
         </div>
 
         <div class="col-md-6 col-lg-4">

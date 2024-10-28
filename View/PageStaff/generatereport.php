@@ -6,6 +6,28 @@ require_once '../../Model/db_connection.php';  // Your DB connection
 // Initialize the Staff class with the database connection
 $userManager = new Staff($conn);
 $baptismReports = $userManager->generateBaptismReport();  // Call the method
+$nme = $_SESSION['fullname'];
+$regId = $_SESSION['citizend_id'];
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 
 ?>
 
@@ -97,7 +119,7 @@ $baptismReports = $userManager->generateBaptismReport();  // Call the method
         <p>argaoparishchurch@gmail.com</p>
     </div>
 
-    <h2 style="text-align: center;">Seminar Report </h2>
+    <h2 style="text-align: center;">Seminar Report  </h2>
 
     <!-- Print Button -->
     <button class="button" onclick="printReport()">Print Report</button>
@@ -105,6 +127,7 @@ $baptismReports = $userManager->generateBaptismReport();  // Call the method
         <table class="table table-bordered">
             <thead>
                 <tr>
+                <th>Speaker</th>
                     <th>Seminar Date</th>
                     <th>Reference Number</th>
                     <th>Type</th>
@@ -120,6 +143,7 @@ $baptismReports = $userManager->generateBaptismReport();  // Call the method
                 <?php if (!empty($baptismReports)): ?>
                     <?php foreach ($baptismReports as $report): ?>
                         <tr>
+                        <td><?= htmlspecialchars($report['speaker']) ?></td>
                         <td><?= htmlspecialchars($report['appointment_schedule_date']) ?></td>
                             <td><?= htmlspecialchars($report['ref_number']) ?></td>
                             <td><?= htmlspecialchars($report['type']) ?></td>

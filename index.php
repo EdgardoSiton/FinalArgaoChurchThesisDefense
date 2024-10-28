@@ -1,6 +1,40 @@
 <?php
 require_once 'Controller/login_con.php';
 require_once 'Model/staff_mod.php';
+header("Cache-Control: no-cache, must-revalidate"); // HTTP 1.1.
+header("Pragma: no-cache"); // HTTP 1.0.
+header("Expires: 0"); // Proxies.
+// Check if the user wants to log out
+if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    // Destroy all session data to log the user out
+    session_unset();
+    session_destroy();
+    
+    // Redirect to login page after logout
+    header("Location: index.php");
+    exit();
+}
+
+// Check if the user is already logged in
+if (isset($_SESSION['email']) && isset($_SESSION['user_type'])) {
+    // Redirect to specific dashboard based on user type if already logged in
+    switch ($_SESSION['user_type']) {
+        case "Staff":
+            header("Location: View/PageStaff/StaffDashboard.php");
+            exit();
+        case "Citizen":
+            header("Location: View/PageCitizen/CitizenPage.php");
+            exit();
+        case "Admin":
+            header("Location: View/PageAdmin/AdminDashboard.php");
+            exit();
+            case "Priest":
+              header("Location: View/PagePriest/index.php");
+              exit();
+    }
+}
+
+// If not logged in, show login form below this point
 $staff = new Staff($conn);
 $announcements = $staff->getAnnouncements();
 ?>
@@ -48,6 +82,12 @@ $announcements = $staff->getAnnouncements();
     <!-- Template Stylesheet -->
     <link href="View/PageLanding/css/style.css" rel="stylesheet" />
     <link rel="stylesheet" href="View/PageLanding/css/rating.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+<script>
+  
+</script>
     
     <style>
       .days li{
@@ -389,6 +429,18 @@ We invite you to check back regularly to stay updated on the vibrant life of our
     ></a>
     <link rel="stylesheet" href="View/PageLanding/assets/css/login.css" />
     <script>
+            document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'success') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Form submitted successfully!',
+            text: 'Waiting for Approval.',
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
       const formOpenBtn = document.querySelector("#form-open"),
         home = document.querySelector(".home"),
         formContainer = document.querySelector(".form_container"),

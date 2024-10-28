@@ -1,3 +1,26 @@
+<?php
+
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -113,9 +136,20 @@
                   <i class="fas fa-calendar-alt"></i>
                   <p>Acknowledgement Receipt</p> 
                 </a>
-               
+                <li class="nav-item">
+                <a href="PriestRecords.php">
+                  <i class="fas fa-calendar-alt"></i>
+                  <p>Priest Personel</p> 
+                </a>
               </li>
-              
+
+              <li class="nav-item">
+                <a href="StaffRecords.php">
+                  <i class="fas fa-calendar-alt"></i>
+                  <p>Staff Personel</p> 
+                </a>
+              </li>
+
             </ul>
           </div>
         </div>

@@ -2,9 +2,35 @@
 require_once '../../Model/staff_mod.php';
 require_once '../../Model/db_connection.php';
 $userManager = new Staff($conn);
-$recentNotifications = $userManager->getRecentNotifications();
-$unreadCount = $userManager->getUnreadNotificationCount();
+// Use $userManager to call the methods
+$recentCitizenUpdates = $userManager->getRecentCitizenUpdates();
+$recentBaptismFills = $userManager->getRecentBaptismFills(); 
+$recentConfirmationFills = $userManager->getRecentConfirmationFills();
+$recentDefuctomFills = $userManager-> getRecentDefuctomFills();
+$recentMarriageFills = $userManager-> getRecentMarriageFills();
+$recentRequestFormFills = $userManager->getRecentRequestFormFills();
+$allUpdates = array_merge($recentCitizenUpdates, $recentBaptismFills,$recentConfirmationFills,$recentDefuctomFills,$recentMarriageFills,$recentRequestFormFills); // Combine both arrays
+$updatesCount = count($allUpdates);
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
 
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -37,7 +63,34 @@ $unreadCount = $userManager->getUnreadNotificationCount();
         },
       });
     </script>
+<style>
+  .notification-item {
+    display: flex;            /* Use flexbox for alignment */
+    align-items: center;     /* Vertically center items */
+    padding: 10px;           /* Add padding for spacing */
+    border-bottom: 1px solid #e0e0e0; /* Bottom border for separation */
+}
 
+.notif-icon {
+    margin-right: 10px;      /* Space between icon and text */
+    font-size: 24px;         /* Adjust icon size */
+    color: #007bff;          /* Icon color */
+}
+
+.notif-content {
+    flex-grow: 1;            /* Allow content to take remaining space */
+}
+
+.notif-content .block {
+    display: block;          /* Make the link block-level for better spacing */
+    font-weight: 500;        /* Bold font for better visibility */
+}
+
+.notif-content .time {
+    font-size: 12px;         /* Smaller font for timestamp */
+    color: #888;             /* Lighter color for less emphasis */
+}
+</style>
     <!-- CSS Files -->
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css" />
     <link rel="stylesheet" href="../assets/css/plugins.min.css" />
@@ -114,200 +167,81 @@ $unreadCount = $userManager->getUnreadNotificationCount();
                     </form>
                   </ul>
                 </li>
-                <li class="nav-item topbar-icon dropdown hidden-caret">
-                  <a
-                    class="nav-link dropdown-toggle"
-                    href="#"
-                    id="messageDropdown"
-                    role="button"
-                    data-bs-toggle="dropdown"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                  >
-                    <i class="fa fa-envelope"></i>
-                  </a>
-                  <ul
-                    class="dropdown-menu messages-notif-box animated fadeIn"
-                    aria-labelledby="messageDropdown"
-                  >
-                    <li>
-                      <div
-                        class="dropdown-title d-flex justify-content-between align-items-center"
-                      >
-                        Messages
-                        <a href="#" class="small">Mark all as read</a>
-                      </div>
-                    </li>
-                    <li>
-                      <div class="message-notif-scroll scrollbar-outer">
-                        <div class="notif-center">
-                      
-                         
-                          <a href="#">
-                            <div class="notif-img">
-                              <img
-                                src="assets/img/mlane.jpg"
-                                alt="Img Profile"
-                              />
-                            </div>
-                            <div class="notif-content">
-                              <span class="subject">Jhon Doe</span>
-                              <span class="block">
-                                Ready for the meeting today...
-                              </span>
-                              <span class="time">12 minutes ago</span>
-                            </div>
-                          </a>
-                          <a href="#">
-                            <div class="notif-img">
-                              <img
-                                src="assets/img/talha.jpg"
-                                alt="Img Profile"
-                              />
-                            </div>
-                            <div class="notif-content">
-                              <span class="subject">Talha</span>
-                              <span class="block"> Hi, Apa Kabar ? </span>
-                              <span class="time">17 minutes ago</span>
-                            </div>
-                          </a>
-                        </div>
-                      </div>
-                    </li>
-                    <li>
-                      <a class="see-all" href="javascript:void(0);"
-                        >See all messages<i class="fa fa-angle-right"></i>
-                      </a>
-                    </li>
-                  </ul>
-                </li>
-  
+                
                  <!-- start for notification bell -->
                  <li class="nav-item topbar-icon dropdown hidden-caret">
-        <a
-            class="nav-link dropdown-toggle"
-            href="#"
-            id="notifDropdown"
-            role="button"
-            data-bs-toggle="dropdown"
-            aria-haspopup="true"
-            aria-expanded="false"
-        >
-            <i class="fa fa-bell"></i>
-            <span class="notification"><?php echo $unreadCount; ?></span>
-        </a>
-        <ul
-            class="dropdown-menu notif-box animated fadeIn"
-            aria-labelledby="notifDropdown"
-        >
-            <li>
-                <div class="dropdown-title">
-                    You have <?php echo $unreadCount; ?> new notification(s)
-                </div>
-            </li>
-            <li>
-                <div class="notif-scroll scrollbar-outer">
-                    <div class="notif-center">
-                        <?php foreach ($recentNotifications as $notification): ?>
-                            <a href="StaffCitizenAccounts.php">
-                                <div class="notif-icon notif-primary">
-                                    <i class="fa fa-user-plus"></i>
+                    <a class="nav-link dropdown-toggle" href="#" id="notifDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-bell"></i>
+                        <span class="notification"><?php echo $updatesCount; ?></span>
+                    </a>
+                    <ul class="dropdown-menu notif-box animated fadeIn" aria-labelledby="notifDropdown">
+                        <li>
+                            <div class="dropdown-title">
+                                You have <?php echo $updatesCount; ?> new update(s)
+                            </div>
+                        </li>
+                        <li>
+                            <div class="notif-scroll scrollbar-outer">
+                                <div class="notif-center">
+                                <?php foreach ($allUpdates as $update): ?>
+    <div class="notification-item">
+        <div class="notif-icon notif-primary">
+            <i class="fa fa-user-plus"></i>
+        </div>
+
+        <div class="notif-content">
+            <span class="block">
+                <?php
+                // Check if it's a new citizen registration
+                if (isset($update['citizend_id'])) {
+                    echo '<a href="StaffCitizenAccounts.php">' . trim(htmlspecialchars($update['fullname'])) . ' - New Registered Account </a>';
+                } else if (isset($update['baptism_id'])) {
+                  if (isset($update['event_name']) && $update['event_name'] === 'Baptism') {
+                      echo '<a href="StaffSoloSched.php">' . htmlspecialchars($update['fullname']) . ' - New Baptism Fill-up Information </a>';
+                  } else if (isset($update['event_name']) && $update['event_name'] === 'MassBaptism') {
+                      echo '<a href="StaffMassSched.php">' . htmlspecialchars($update['fullname']) . ' - New Mass Baptism Fill-up Information </a>';
+                  }
+              } else if (isset($update['confirmationfill_id'])) {
+                if (isset($update['event_name']) && $update['event_name'] === 'Confirmation') {
+                    echo '<a href="ConfirmationFillPage.php">' . htmlspecialchars($update['fullname']) . ' - New Confirmation Fill-up Information </a>';
+                } else if (isset($update['event_name']) && $update['event_name'] === 'MassConfirmation') {
+                    echo '<a href="StaffMassSched.php">' . htmlspecialchars($update['fullname']) . ' - New Mass Confirmation Fill-up Information </a>';
+                }
+            } else if (isset($update['defuctomfill_id'])) {
+                echo '<a href="DefuctomFillPage.php">' . htmlspecialchars($update['d_fullname']) . ' - New Defuctom Fill-up Information </a>';
+            } else if (isset($update['marriagefill_id'])) {
+                if (isset($update['event_name']) && $update['event_name'] === 'Marriage') {
+                    echo '<a href="MarriageFillPage.php">' . htmlspecialchars($update['full_names']) . ' - New Marriage Fill-up Information </a>';
+                } else if (isset($update['event_name']) && $update['event_name'] === 'MassWedding') {
+                    echo '<a href="StaffMassSched.php">' . htmlspecialchars($update['full_names']) . ' - New Mass Wedding Fill-up Information </a>';
+                }
+            }else if (isset($update['req_id'])) {
+              $category = htmlspecialchars($update['req_category']); // Sanitize req_category
+              echo '<a href="StaffRequestSchedule.php">' . htmlspecialchars($update['req_person']) . ' - New ' . $category . ' Fill-up Information </a>';
+          }
+           else {
+                echo "Unknown update";
+            }
+                ?>
+            </span>
+            <span class="time"><?php echo htmlspecialchars($update['c_current_time']); ?></span>
+        </div>
+    </div>
+<?php endforeach; ?>
+
+
                                 </div>
-                                <div class="notif-content">
-                                    <span class="block"><?php echo htmlspecialchars($notification['message']); ?></span>
-                                    <span class="time"><?php echo htmlspecialchars($notification['time']); ?></span>
-                                </div>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            </li>
-            <li>
-                <a class="see-all" href="javascript:void(0);">See all notifications<i class="fa fa-angle-right"></i></a>
-            </li>
-        </ul>
-    </li>
+                            </div>
+                        </li>
+                        <li>
+                         
+                        </li>
+                    </ul>
+                </li>
                 <!-- end for notification -->
 
               
-                <li class="nav-item topbar-icon dropdown hidden-caret">
-                  <a
-                    class="nav-link"
-                    data-bs-toggle="dropdown"
-                    href="#"
-                    aria-expanded="false"
-                  >
-                    <i class="fas fa-layer-group"></i>
-                  </a>
-                  <div class="dropdown-menu quick-actions animated fadeIn">
-                    <div class="quick-actions-header">
-                      <span class="title mb-1">Quick Actions</span>
-                      <span class="subtitle op-7">Shortcuts</span>
-                    </div>
-                    <div class="quick-actions-scroll scrollbar-outer">
-                      <div class="quick-actions-items">
-                        <div class="row m-0">
-                          <a class="col-6 col-md-4 p-0" href="#">
-                            <div class="quick-actions-item">
-                              <div class="avatar-item bg-danger rounded-circle">
-                                <i class="far fa-calendar-alt"></i>
-                              </div>
-                              <span class="text">Calendar</span>
-                            </div>
-                          </a>
-                          <a class="col-6 col-md-4 p-0" href="#">
-                            <div class="quick-actions-item">
-                              <div
-                                class="avatar-item bg-warning rounded-circle"
-                              >
-                                <i class="fas fa-map"></i>
-                              </div>
-                              <span class="text">Maps</span>
-                            </div>
-                          </a>
-                          <a class="col-6 col-md-4 p-0" href="#">
-                            <div class="quick-actions-item">
-                              <div class="avatar-item bg-info rounded-circle">
-                                <i class="fas fa-file-excel"></i>
-                              </div>
-                              <span class="text">Reports</span>
-                            </div>
-                          </a>
-                          <a class="col-6 col-md-4 p-0" href="#">
-                            <div class="quick-actions-item">
-                              <div
-                                class="avatar-item bg-success rounded-circle"
-                              >
-                                <i class="fas fa-envelope"></i>
-                              </div>
-                              <span class="text">Emails</span>
-                            </div>
-                          </a>
-                          <a class="col-6 col-md-4 p-0" href="#">
-                            <div class="quick-actions-item">
-                              <div
-                                class="avatar-item bg-primary rounded-circle"
-                              >
-                                <i class="fas fa-file-invoice-dollar"></i>
-                              </div>
-                              <span class="text">Invoice</span>
-                            </div>
-                          </a>
-                          <a class="col-6 col-md-4 p-0" href="#">
-                            <div class="quick-actions-item">
-                              <div
-                                class="avatar-item bg-secondary rounded-circle"
-                              >
-                                <i class="fas fa-credit-card"></i>
-                              </div>
-                              <span class="text">Payments</span>
-                            </div>
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </li>
+               
 
                 <li class="nav-item topbar-user dropdown hidden-caret">
                   <a
@@ -353,7 +287,7 @@ $unreadCount = $userManager->getUnreadNotificationCount();
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="#">My Profile</a>
                         <a class="dropdown-item" href="#">Account Setting</a>
-                        <a class="dropdown-item" href="../../index.php">Logout</a>
+                        <a class="dropdown-item" href="../../index.php?action=logout">Logout</a>
                       </li>
                     </div>
                   </ul>

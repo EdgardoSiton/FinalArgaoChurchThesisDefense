@@ -34,6 +34,26 @@ if ($confirmationfill_id) {
     echo "No baptism ID provided.";
     $scheduleId = null;
 }
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 
 ?>
 
@@ -120,6 +140,21 @@ small {
     }
 
     </style>
+    <script>
+   function validateAmount() {
+        const amountInput = document.getElementById('eventTitle');
+        const amountError = document.getElementById('amountError');
+        const amount = parseFloat(amountInput.value);
+
+        if (isNaN(amount) || amount <= 0) {
+            amountError.hidden = false; // Show the error message
+            return false; // Prevent form submission
+        } else {
+            amountError.hidden = true; // Hide the error message if valid
+            return true; // Allow form submission
+        }
+    }
+    </script>
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
  integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl7/1L_dstPt3HV5HzF6Gvk/e3s4Wz6iJgD/+ub2oU" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
@@ -140,7 +175,7 @@ small {
      
         <div class="container">
             <div class="page-inner">
-  <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -149,17 +184,13 @@ small {
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="modalForm" method="POST" action="../../Controller/addbaptism_con.php">
+            <form id="modalForm" method="POST" action="../../Controller/addbaptism_con.php" onsubmit="return validateAmount()">
                 <div class="modal-body">
-                <input type="hidden" name="confirmation_id" value="<?php echo htmlspecialchars($confirmationfill_id); ?>" />  <div class="form-group">
-                               
-                          
-                            </div>
-       
-                 
+                    <input type="hidden" name="confirmation_id" value="<?php echo htmlspecialchars($confirmationfill_id); ?>" />  
                     <div class="form-group">
                         <label for="eventTitle">Payable Amount</label>
-                        <input type="number" class="form-control" id="eventTitle" name="eventTitle" placeholder="Enter Amount">
+                        <input type="number" class="form-control" id="eventTitle" name="eventTitle" placeholder="Enter Amount" >
+                        <small id="amountError" class="text-danger" hidden>Please enter a valid amount greater than zero.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -215,34 +246,48 @@ small {
                     <div class="card-header">
                         <div class="card-title">Confirmation View Information Form</div>
                     </div>
-                    <div class="col-md-6 col-lg-4">
+                    <div class="row"> <!-- Ensure row is wrapping both columns -->
     <!-- Priest Name Section -->
-    <div class="form-group">
-    <label for="priestName">Priest Name</label>
-    <div class="d-flex align-items-center">
-        <input type="text" class="form-control" id="priestName" name="priestName" value="<?php echo $Priest; ?>" readonly />
+    <div class="col-md-6 col-lg-4">
+        <div class="form-group">
+            <label for="priestName">Priest Name</label>
+            <div class="d-flex align-items-center">
+                <input type="text" class="form-control" id="priestName" name="priestName" value="<?php echo $Priest; ?>" readonly />
 
-        <?php if ($Pending == 'Pending'): ?>
-            <!-- If the priest is pending, show a disabled button -->
-            <button type="button" class="btn btn-warning" disabled>Waiting for Approval</button>
+                <?php if ($Pending == 'Pending'): ?>
+                    <!-- If the priest is pending, show a disabled button -->
+                    <button type="button" class="btn btn-warning" disabled>Waiting for Approval</button>
 
-        <?php elseif ($Pending == 'Approved'): ?>
-            <!-- If the priest is accepted, display a message instead of a button -->
-            <span class="text-success">Has been Approved</span>
+                <?php elseif ($Pending == 'Approved'): ?>
+                    <!-- If the priest is accepted, display a message instead of a button -->
+                    <span class="text-success">Has been Approved</span>
 
-            <?php elseif ($Pending == 'Declined'): ?>
-            <!-- If the priest is declined, enable the button to trigger the modal -->
-            <button type="button" data-toggle="modal" data-target="#myModals" class="btn btn-danger">Priest Declined - Click to Reassign</button>
-        
-        
-            <?php else: ?>
-            <!-- Default button state (e.g., if no status is set) -->
-            <button type="button" data-toggle="modal" data-target="#myModals" class="btn btn-success">Priest Assign </button>
-             
+                <?php elseif ($Pending == 'Declined'): ?>
+                    <!-- If the priest is declined, enable the button to trigger the modal -->
+                    <button type="button" data-toggle="modal" data-target="#myModals" class="btn btn-danger">Priest Declined - Click to Reassign</button>
+
+                <?php else: ?>
+                    <!-- Default button state (e.g., if no status is set) -->
+                    <button type="button" data-toggle="modal" data-target="#myModals" class="btn btn-success">Priest Assign</button>
+
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reason for Decline Section -->
+    <div class="col-md-6 col-lg-4">
+        <?php if ($Pending === 'Declined') : ?>
+            <!-- Display the reason for declining -->
+            <div class="form-group">
+                <label for="declineReason">Reason for Decline:</label>
+                <textarea class="form-control" id="declineReason" rows="3" readonly><?php echo htmlspecialchars($declineReason); ?></textarea>
+            </div>
         <?php endif; ?>
     </div>
 </div>
-</div>
+
+
 
 
                     <div class="card-body">

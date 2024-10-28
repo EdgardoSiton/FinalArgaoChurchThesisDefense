@@ -11,7 +11,6 @@
 
 namespace Symfony\Component\Validator\Constraints;
 
-use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Exception\ConstraintDefinitionException;
 
 /**
@@ -26,15 +25,10 @@ class Collection extends Composite
     public const MISSING_FIELD_ERROR = '2fa2158c-2a7f-484b-98aa-975522539ff8';
     public const NO_SUCH_FIELD_ERROR = '7703c766-b5d5-4cef-ace7-ae0dd82304e9';
 
-    protected const ERROR_NAMES = [
+    protected static $errorNames = [
         self::MISSING_FIELD_ERROR => 'MISSING_FIELD_ERROR',
         self::NO_SUCH_FIELD_ERROR => 'NO_SUCH_FIELD_ERROR',
     ];
-
-    /**
-     * @deprecated since Symfony 6.1, use const ERROR_NAMES instead
-     */
-    protected static $errorNames = self::ERROR_NAMES;
 
     public $fields = [];
     public $allowExtraFields = false;
@@ -42,9 +36,14 @@ class Collection extends Composite
     public $extraFieldsMessage = 'This field was not expected.';
     public $missingFieldsMessage = 'This field is missing.';
 
-    public function __construct(mixed $fields = null, ?array $groups = null, mixed $payload = null, ?bool $allowExtraFields = null, ?bool $allowMissingFields = null, ?string $extraFieldsMessage = null, ?string $missingFieldsMessage = null)
+    /**
+     * {@inheritdoc}
+     */
+    public function __construct(mixed $fields = null, array $groups = null, mixed $payload = null, bool $allowExtraFields = null, bool $allowMissingFields = null, string $extraFieldsMessage = null, string $missingFieldsMessage = null)
     {
-        if (self::isFieldsOption($fields)) {
+        // no known options set? $fields is the fields array
+        if (\is_array($fields)
+            && !array_intersect(array_keys($fields), ['groups', 'fields', 'allowExtraFields', 'allowMissingFields', 'extraFieldsMessage', 'missingFieldsMessage'])) {
             $fields = ['fields' => $fields];
         }
 
@@ -57,7 +56,7 @@ class Collection extends Composite
     }
 
     /**
-     * @return void
+     * {@inheritdoc}
      */
     protected function initializeNestedConstraints()
     {
@@ -88,32 +87,5 @@ class Collection extends Composite
     protected function getCompositeOption(): string
     {
         return 'fields';
-    }
-
-    private static function isFieldsOption($options): bool
-    {
-        if (!\is_array($options)) {
-            return false;
-        }
-
-        foreach ($options as $optionOrField) {
-            if ($optionOrField instanceof Constraint) {
-                return true;
-            }
-
-            if (null === $optionOrField) {
-                continue;
-            }
-
-            if (!\is_array($optionOrField)) {
-                return false;
-            }
-
-            if ($optionOrField && !($optionOrField[0] ?? null) instanceof Constraint) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

@@ -3,6 +3,30 @@ require_once '../../Model/admin_mod.php';
 require_once '../../Model/db_connection.php';
 $admin = new Admin ($conn);
 $getconfirmationRecords = $admin->getConfirmationRecords();
+session_start();
+$email = $_SESSION['email'];
+$nme = $_SESSION['fullname'];
+$regId = $_SESSION['citizend_id'];
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -82,13 +106,15 @@ $getconfirmationRecords = $admin->getConfirmationRecords();
                     <td><span></span><?php echo htmlspecialchars($confirmation['address']); ?></td>
                     <td><?php echo htmlspecialchars($confirmation['gender']); ?></td>
                    
-                    <td><a href="#" class="btn btn-label-info  btn-m">
+                    <td>
+                <a href="certificateofconfirmation.php?id=<?php echo urlencode($confirmation['id']); ?>" 
+                   class="btn btn-label-info btn-m" target="_blank">
                     <span class="btn-label">
-                              <i class="fa fa-print"></i>
-                            </span>
-                            Print
-                          </a></td>
-                    </td>
+                        <i class="fa fa-print"></i>
+                    </span>
+                    Print
+                </a>
+            </td>
                 </tr>
             <?php endforeach; ?>
         </tbody>

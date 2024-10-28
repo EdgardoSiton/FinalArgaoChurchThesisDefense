@@ -29,21 +29,19 @@ class YamlFileLoader extends FileLoader
      *
      * @var array
      */
-    protected $classes;
-
-    public function __construct(string $file)
-    {
-        $this->file = $file;
-    }
+    protected $classes = null;
 
     /**
      * Caches the used YAML parser.
      */
-    private YamlParser $yamlParser;
+    private $yamlParser;
 
+    /**
+     * {@inheritdoc}
+     */
     public function loadClassMetadata(ClassMetadata $metadata): bool
     {
-        if (!isset($this->classes)) {
+        if (null === $this->classes) {
             $this->loadClassesFromYaml();
         }
 
@@ -65,7 +63,7 @@ class YamlFileLoader extends FileLoader
      */
     public function getMappedClasses(): array
     {
-        if (!isset($this->classes)) {
+        if (null === $this->classes) {
             $this->loadClassesFromYaml();
         }
 
@@ -89,12 +87,6 @@ class YamlFileLoader extends FileLoader
 
                 if (\is_array($options)) {
                     $options = $this->parseNodes($options);
-                }
-
-                if (null !== $options && (!\is_array($options) || array_is_list($options))) {
-                    $options = [
-                        'value' => $options,
-                    ];
                 }
 
                 $values[] = $this->newConstraint(key($childNodes), $options);
@@ -137,10 +129,8 @@ class YamlFileLoader extends FileLoader
         return $classes;
     }
 
-    private function loadClassesFromYaml(): void
+    private function loadClassesFromYaml()
     {
-        parent::__construct($this->file);
-
         $this->yamlParser ??= new YamlParser();
         $this->classes = $this->parseFile($this->file);
 
@@ -153,12 +143,9 @@ class YamlFileLoader extends FileLoader
         }
     }
 
-    private function loadClassMetadataFromYaml(ClassMetadata $metadata, array $classDescription): void
+    private function loadClassMetadataFromYaml(ClassMetadata $metadata, array $classDescription)
     {
         if (isset($classDescription['group_sequence_provider'])) {
-            if (\is_string($classDescription['group_sequence_provider'])) {
-                $metadata->setGroupProvider($classDescription['group_sequence_provider']);
-            }
             $metadata->setGroupSequenceProvider(
                 (bool) $classDescription['group_sequence_provider']
             );

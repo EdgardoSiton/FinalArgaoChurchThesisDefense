@@ -2,7 +2,30 @@
 require_once '../../Model/admin_mod.php';
 require_once '../../Model/db_connection.php';
 $admin = new Admin ($conn);
+session_start();
+$nme = $_SESSION['fullname'];
+$regId = $_SESSION['citizend_id'];
 $donations = $admin->getDonations();
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -1,7 +1,38 @@
 <?php
+require_once '../../Model/admin_mod.php';
+require_once '../../Model/db_connection.php';
+$modelInstance = new Admin ($conn);
+$totalBaptisms = $modelInstance->getTotalBaptisms(); 
+$totalConfirmation = $modelInstance->getTotalConfirmationsDone(); 
+$totalDefunctorum = $modelInstance->getTotalDefunctorumDone(); 
+$totalWedding = $modelInstance->getTotalWeddingRecords(); 
+$totalDonationData = $modelInstance->getDonationsTotal();
+$totalDonationAmount = $totalDonationData['total_amount'] ?? 0; 
+$totalAcknowledgementAmount = $modelInstance->getTotalPayableAmount();
+ 
 session_start();
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -114,8 +145,17 @@ $regId = $_SESSION['citizend_id'];
               <a href="#"  data-toggle="modal" data-target="#myModal" class="btn btn-primary btn-round">Add Donator</a>
               </div>
               <div class="ms-md-auto py-2 py-md-0">
-              <a href="Priest.php" class="btn btn-primary btn-round">Add Priest</a>
-              </div>
+    <div class="dropdown">
+        <button class="btn btn-primary btn-round dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+            Add Account
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <li><a class="dropdown-item" href="Priest.php">Add Priest</a></li>
+            <li><a class="dropdown-item" href="Staff.php">Add Staff</a></li>
+        </ul>
+    </div>
+</div>
+
             </div>
             <div class="row">
               <div class="col-sm-6 col-md-3">
@@ -131,8 +171,73 @@ $regId = $_SESSION['citizend_id'];
                       </div>
                       <div class="col col-stats ms-3 ms-sm-0">
                         <div class="numbers">
-                          <p class="card-category">Total Event Done</p>
-                          <h4 class="card-title">294</h4>
+                          <p class="card-category">Total Baptism Done</p>
+                          <h4 class="card-title"><?php echo $totalBaptisms; ?></h4>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <div class="card card-stats card-round">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-icon">
+                        <div
+                          class="icon-big text-center icon-primary bubble-shadow-small"
+                        >
+                          <i class="fas fa-calendar-check"></i>
+                        </div>
+                      </div>
+                      <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="numbers">
+                        
+                          <p class="card-category">Total Confirmation Done</p>
+                          <h4 class="card-title"><?php echo $totalConfirmation; ?></h4>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <div class="card card-stats card-round">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-icon">
+                        <div
+                          class="icon-big text-center icon-primary bubble-shadow-small"
+                        >
+                          <i class="fas fa-calendar-check"></i>
+                        </div>
+                      </div>
+                      <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="numbers">
+                          <p class="card-category">Total Defuctom Done</p>
+                          <h4 class="card-title"><?php echo $totalDefunctorum; ?></h4>
+                    </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <div class="card card-stats card-round">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-icon">
+                        <div
+                          class="icon-big text-center icon-primary bubble-shadow-small"
+                        >
+                          <i class="fas fa-calendar-check"></i>
+                        </div>
+                      </div>
+                      
+                      <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="numbers">
+                          <p class="card-category">Total Marriage Done</p>
+                          <h4 class="card-title"><?php echo $totalWedding; ?></h4>
                         </div>
                       </div>
                     </div>
@@ -150,11 +255,12 @@ $regId = $_SESSION['citizend_id'];
                           <i class="fas fa-coins"></i>
                         </div>
                       </div>
+                     
                       <div class="col col-stats ms-3 ms-sm-0">
                         <div class="numbers">
                           <p class="card-category">Total Donation Amount</p>
-                          <h4 class="card-title"><span>&#8369;</span>13,303</h4>
-                        </div>
+                          <h4 class="card-title"><span>&#8369;</span><?php echo number_format($totalDonationAmount, 2); ?></h4>
+                    </div>
                       </div>
                     </div>
                   </div>
@@ -173,9 +279,8 @@ $regId = $_SESSION['citizend_id'];
                       </div>
                       <div class="col col-stats ms-3 ms-sm-0">
                         <div class="numbers">
-                          <p class="card-category">Total Financial Amount</p>
-                          <h4 class="card-title"><span>&#8369;</span>16,345</h4>
-                        </div>
+                        <p class="card-category">Total Acknowledgement Amount</p>
+<h4 class="card-title"><span>&#8369;</span><?php echo number_format($totalAcknowledgementAmount, 2); ?></h4>
                       </div>
                     </div>
                   </div>

@@ -21,15 +21,26 @@ use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
  */
 final class CompiledClassMetadataCacheWarmer implements CacheWarmerInterface
 {
-    public function __construct(
-        private readonly array $classesToCompile,
-        private readonly ClassMetadataFactoryInterface $classMetadataFactory,
-        private readonly ClassMetadataFactoryCompiler $classMetadataFactoryCompiler,
-        private readonly Filesystem $filesystem,
-    ) {
+    private $classesToCompile;
+
+    private $classMetadataFactory;
+
+    private $classMetadataFactoryCompiler;
+
+    private $filesystem;
+
+    public function __construct(array $classesToCompile, ClassMetadataFactoryInterface $classMetadataFactory, ClassMetadataFactoryCompiler $classMetadataFactoryCompiler, Filesystem $filesystem)
+    {
+        $this->classesToCompile = $classesToCompile;
+        $this->classMetadataFactory = $classMetadataFactory;
+        $this->classMetadataFactoryCompiler = $classMetadataFactoryCompiler;
+        $this->filesystem = $filesystem;
     }
 
-    public function warmUp(string $cacheDir, ?string $buildDir = null): array
+    /**
+     * {@inheritdoc}
+     */
+    public function warmUp(string $cacheDir): array
     {
         $metadatas = [];
 
@@ -44,6 +55,9 @@ final class CompiledClassMetadataCacheWarmer implements CacheWarmerInterface
         return [];
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function isOptional(): bool
     {
         return true;

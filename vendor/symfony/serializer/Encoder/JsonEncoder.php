@@ -23,17 +23,20 @@ class JsonEncoder implements EncoderInterface, DecoderInterface
     protected $encodingImpl;
     protected $decodingImpl;
 
-    private array $defaultContext = [
+    private $defaultContext = [
         JsonDecode::ASSOCIATIVE => true,
     ];
 
-    public function __construct(?JsonEncode $encodingImpl = null, ?JsonDecode $decodingImpl = null, array $defaultContext = [])
+    public function __construct(JsonEncode $encodingImpl = null, JsonDecode $decodingImpl = null, array $defaultContext = [])
     {
         $this->defaultContext = array_merge($this->defaultContext, $defaultContext);
         $this->encodingImpl = $encodingImpl ?? new JsonEncode($this->defaultContext);
         $this->decodingImpl = $decodingImpl ?? new JsonDecode($this->defaultContext);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function encode(mixed $data, string $format, array $context = []): string
     {
         $context = array_merge($this->defaultContext, $context);
@@ -41,6 +44,9 @@ class JsonEncoder implements EncoderInterface, DecoderInterface
         return $this->encodingImpl->encode($data, self::FORMAT, $context);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function decode(string $data, string $format, array $context = []): mixed
     {
         $context = array_merge($this->defaultContext, $context);
@@ -48,11 +54,17 @@ class JsonEncoder implements EncoderInterface, DecoderInterface
         return $this->decodingImpl->decode($data, self::FORMAT, $context);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function supportsEncoding(string $format): bool
     {
         return self::FORMAT === $format;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function supportsDecoding(string $format): bool
     {
         return self::FORMAT === $format;

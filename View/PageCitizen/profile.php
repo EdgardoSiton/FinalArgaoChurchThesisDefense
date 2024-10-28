@@ -1,17 +1,41 @@
 <?php
 
 
+
 // Include database connection and controller
 require_once '../../Model/db_connection.php';
 require_once '../../Controller/citizen_con.php';
 require_once '../../Model/login_mod.php';
 // Get current user details from the session
+
 $nme = $_SESSION['fullname'];
 $citizenId = $_SESSION['citizend_id'];
 $citizenInfo = new User ($conn);
 
 // Fetch additional user details using the citizen ID
 $citizenDetails = $citizenInfo->getCitizenDetails($citizenId);
+
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -162,7 +186,7 @@ $citizenDetails = $citizenInfo->getCitizenDetails($citizenId);
                     <?php echo htmlspecialchars($nme); ?>
                 </div>
                 <div class="col-sm-3 text-right">
-                    <i class="fas fa-edit text-secondary edit-btn" style="cursor: pointer;"></i>
+                   
                 </div>
             </div>
             <hr />
@@ -174,7 +198,7 @@ $citizenDetails = $citizenInfo->getCitizenDetails($citizenId);
                     <?php echo htmlspecialchars($citizenDetails['email']); ?>
                 </div>
                 <div class="col-sm-3 text-right">
-                    <i class="fas fa-edit text-secondary edit-btn" style="cursor: pointer;"></i>
+                  
                 </div>
             </div>
             <hr />
@@ -186,7 +210,7 @@ $citizenDetails = $citizenInfo->getCitizenDetails($citizenId);
                     <?php echo htmlspecialchars($citizenDetails['gender']); ?>
                 </div>
                 <div class="col-sm-3 text-right">
-                    <i class="fas fa-edit text-secondary edit-btn" style="cursor: pointer;"></i>
+                  
                 </div>
             </div>
             <hr />
@@ -198,7 +222,7 @@ $citizenDetails = $citizenInfo->getCitizenDetails($citizenId);
                     <?php echo htmlspecialchars($citizenDetails['phone']); ?>
                 </div>
                 <div class="col-sm-3 text-right">
-                    <i class="fas fa-edit text-secondary edit-btn" style="cursor: pointer;"></i>
+
                 </div>
             </div>
             <hr />
@@ -210,7 +234,7 @@ $citizenDetails = $citizenInfo->getCitizenDetails($citizenId);
                     <?php echo htmlspecialchars($citizenDetails['c_date_birth']); ?>
                 </div>
                 <div class="col-sm-3 text-right">
-                    <i class="fas fa-edit text-secondary edit-btn" style="cursor: pointer;"></i>
+                  
                 </div>
             </div>
             <hr />
@@ -222,15 +246,11 @@ $citizenDetails = $citizenInfo->getCitizenDetails($citizenId);
                     <?php echo htmlspecialchars($citizenDetails['address']); ?>
                 </div>
                 <div class="col-sm-3 text-right">
-                    <i class="fas fa-edit text-secondary edit-btn" style="cursor: pointer;"></i>
+                 
                 </div>
             </div>
             <hr />
-            <div class="row">
-                <div class="col-sm-12">
-                    <a class="btn btn-info" target="__blank" href="#">Save</a>
-                </div>
-            </div>
+         
         </div>
     </div>
 </div>

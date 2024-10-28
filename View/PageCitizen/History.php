@@ -2,19 +2,29 @@
 session_start();
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
-require_once '../../Model/db_connection.php';
-require_once '../../Model/staff_mod.php';
-
 $loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
-
-$staff = new Staff($conn);
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
 
 if (!$loggedInUserEmail) {
-  header("Location: login.php");
+  header("Location: ../../index.php");
   exit();
 }
-$announcements = $staff->getAnnouncements(); // Fetch all announcements
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 

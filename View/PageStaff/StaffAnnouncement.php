@@ -7,6 +7,26 @@ require_once '../../Model/staff_mod.php';
 require_once '../../Model/db_connection.php';
 $staff = new Staff($conn);
 $announcements = $staff->getAnnouncements();
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -126,76 +146,88 @@ $announcements = $staff->getAnnouncements();
                   </div>
                 </div>
                 <div class="row">
-        <?php foreach ($announcements as $announcement): ?>
-            <div class="col-md-4">
-                <div class="card card-post card-round">
-                    <div class="card-body">
-                        <div class="separator-solid"></div>
-                        <p class="card-category text-info mb-1">
-                        <h3 class="card-title">
-                            <a href="#">Priest:<?php echo htmlspecialchars($announcement['fullname']) ?></a>
-                        </h3>
-                        <a href="#">
-                        Event Date:  <?php 
-       $date = htmlspecialchars(date('F j, Y', strtotime($announcement['schedule_date'])));
-        $startTime = htmlspecialchars(date('g:i a', strtotime($announcement['schedule_start_time'])));
-        $endTime = htmlspecialchars(date('g:i a', strtotime($announcement['schedule_end_time'])));
-        echo "$date - $startTime - $endTime ";
-        ?>
-    </a>
-    <br>
-    <a href="#">
-                       Seminar Date:  <?php 
-       $date = htmlspecialchars(date('F j, Y', strtotime($announcement['seminar_date'])));
-        $startTime = htmlspecialchars(date('g:i a', strtotime($announcement['seminar_start_time'])));
-        $endTime = htmlspecialchars(date('g:i a', strtotime($announcement['seminar_end_time'])));
-        echo "$date - $startTime - $endTime ";
-        ?>
-    </a>
-                        </p>
-                        <h3 class="card-title">
-                            <a href="#"><?php echo htmlspecialchars($announcement['title']) ?></a>
-                        </h3>
-                        <p class="card-text">
-                            <?php echo htmlspecialchars($announcement['description']) ?>
-                        </p>
-                        <h3 class="card-title">
-                            <a href="#">Capacity: <?php echo htmlspecialchars($announcement['capacity']) ?></a>
-                        </h3>
-                        <?php
-                        // Determine the form link based on event type
-                        $eventType = htmlspecialchars($announcement['event_type']);
-                        $formLink = '#'; // Default link in case none match
+    <?php foreach ($announcements as $announcement): ?>
+        <div class="col-md-4">
+            <div class="card card-post card-round">
+                <div class="card-body">
+                    <div class="separator-solid"></div>
+                    <p class="card-category text-info mb-1">
+                    <h3 class="card-title">
+                        <a href="#">Speaker:<?php echo htmlspecialchars($announcement['speaker_ann']) ?></a>
+                    </h3>
+                    <h3 class="card-title">
+                        <a href="#">Priest:<?php echo htmlspecialchars($announcement['fullname']) ?></a>
+                    </h3>
+                    <a href="#">
+                        Event Date: <?php 
+                            $date = htmlspecialchars(date('F j, Y', strtotime($announcement['schedule_date'])));
+                            $startTime = htmlspecialchars(date('g:i a', strtotime($announcement['schedule_start_time'])));
+                            $endTime = htmlspecialchars(date('g:i a', strtotime($announcement['schedule_end_time'])));
+                            echo "$date - $startTime - $endTime";
+                        ?>
+                    </a>
+                    <br>
+                    <a href="#">
+                        Seminar Date: <?php 
+                            $date = htmlspecialchars(date('F j, Y', strtotime($announcement['seminar_date'])));
+                            $startTime = htmlspecialchars(date('g:i a', strtotime($announcement['seminar_start_time'])));
+                            $endTime = htmlspecialchars(date('g:i a', strtotime($announcement['seminar_end_time'])));
+                            echo "$date - $startTime - $endTime";
+                        ?>
+                    </a>
+                    </p>
+                    <h3 class="card-title">
+                        <a href="#"><?php echo htmlspecialchars($announcement['title']) ?></a>
+                    </h3>
+                    <p class="card-text">
+                        <?php echo htmlspecialchars($announcement['description']) ?>
+                    </p>
+                    <h3 class="card-title">
+                        <a href="#">Capacity: <?php echo htmlspecialchars($announcement['capacity']) ?></a>
+                    </h3>
 
-                        // Set form link based on event type
-                        switch ($eventType) {
-                            case 'MassBaptism':
-                                $formLink = 'MassFillBaptismForm.php';
-                                break;
-                            case 'MassConfirmation':
-                                $formLink = 'MassFillConfirmationForm.php';
-                                break;
-                            case 'MassMarriage':
-                                $formLink = 'MassFillWeddingForm.php';
-                                break;
-                            // Add more cases as needed for other event types
-                        }
+                    <?php
+                    // Determine the form link based on event type
+                    $eventType = htmlspecialchars($announcement['event_type']);
+                    $formLink = '#'; // Default link in case none match
 
-                        // Check if capacity is zero
-                        if ($announcement['capacity'] > 0) {
-                            // Show Register button if capacity is available
-                            echo '<a href="' . $formLink . '?announcement_id=' . htmlspecialchars($announcement['announcement_id']) . '" class="btn btn-primary btn-rounded btn-sm register-btn" data-announcement-id="' . htmlspecialchars($announcement['announcement_id']) . '">Register Now</a>';
-                        } else {
-                            // Show Fully Booked message in red if capacity is zero
-                            echo '<p class="text-danger"><strong>Fully Booked</strong></p>';
-                        }
+                    // Set form link based on event type
+                    switch ($eventType) {
+                        case 'MassBaptism':
+                            $formLink = 'MassFillBaptismForm.php';
+                            break;
+                        case 'MassConfirmation':
+                            $formLink = 'MassFillConfirmationForm.php';
+                            break;
+                        case 'MassMarriage':
+                            $formLink = 'MassFillWeddingForm.php';
+                            break;
+                    }
+
+                    // Check if capacity is zero
+                    if ($announcement['capacity'] > 0) {
+                        // Show Register button if capacity is available
+                        echo '<a href="' . $formLink . '?announcement_id=' . htmlspecialchars($announcement['announcement_id']) . '" class="btn btn-primary btn-rounded btn-sm register-btn" data-announcement-id="' . htmlspecialchars($announcement['announcement_id']) . '">Register Now</a>';
+                    } else {
+                        // Show Fully Booked message in red if capacity is zero
+                        echo '<p class="text-danger"><strong>Fully Booked</strong></p>';
+                    }
+
+                    // Add a "Print Seminar" button that navigates to the print page based on event type
+                    if ($eventType == 'MassBaptism') {
+                        echo '<a href="generatemassbaptismreport.php?announcement_id=' . htmlspecialchars($announcement['announcement_id']) . '" class="btn btn-secondary btn-rounded btn-sm">Print Seminar List</a>';
+                    } elseif ($eventType == 'MassConfirmation') {
+                        echo '<a href="generatemassconfirmationreport.php?announcement_id=' . htmlspecialchars($announcement['announcement_id']) . '" class="btn btn-secondary btn-rounded btn-sm">Print Seminar List</a>';
+                    } elseif ($eventType == 'MassMarriage') {
+                        echo '<a href="generatemassmarriagereport.php?announcement_id=' . htmlspecialchars($announcement['announcement_id']) . '" class="btn btn-secondary btn-rounded btn-sm">Print Seminar List</a>';
+                    }
                     ?>
-                    </div>
                 </div>
             </div>
-        <?php endforeach; ?>
-    </div>
+        </div>
+    <?php endforeach; ?>
 </div>
+
 </div>
 
     </div>

@@ -11,7 +11,6 @@
 
 namespace Symfony\Component\Validator\Validator;
 
-use Psr\Container\ContainerInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Constraints\GroupSequence;
 use Symfony\Component\Validator\ConstraintValidatorFactoryInterface;
@@ -33,69 +32,86 @@ class RecursiveValidator implements ValidatorInterface
     protected $metadataFactory;
     protected $validatorFactory;
     protected $objectInitializers;
-    protected ?ContainerInterface $groupProviderLocator;
 
     /**
      * Creates a new validator.
      *
      * @param ObjectInitializerInterface[] $objectInitializers The object initializers
      */
-    public function __construct(ExecutionContextFactoryInterface $contextFactory, MetadataFactoryInterface $metadataFactory, ConstraintValidatorFactoryInterface $validatorFactory, array $objectInitializers = [], ?ContainerInterface $groupProviderLocator = null)
+    public function __construct(ExecutionContextFactoryInterface $contextFactory, MetadataFactoryInterface $metadataFactory, ConstraintValidatorFactoryInterface $validatorFactory, array $objectInitializers = [])
     {
         $this->contextFactory = $contextFactory;
         $this->metadataFactory = $metadataFactory;
         $this->validatorFactory = $validatorFactory;
         $this->objectInitializers = $objectInitializers;
-        $this->groupProviderLocator = $groupProviderLocator;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function startContext(mixed $root = null): ContextualValidatorInterface
     {
         return new RecursiveContextualValidator(
             $this->contextFactory->createContext($this, $root),
             $this->metadataFactory,
             $this->validatorFactory,
-            $this->objectInitializers,
-            $this->groupProviderLocator,
+            $this->objectInitializers
         );
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function inContext(ExecutionContextInterface $context): ContextualValidatorInterface
     {
         return new RecursiveContextualValidator(
             $context,
             $this->metadataFactory,
             $this->validatorFactory,
-            $this->objectInitializers,
-            $this->groupProviderLocator,
+            $this->objectInitializers
         );
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getMetadataFor(mixed $object): MetadataInterface
     {
         return $this->metadataFactory->getMetadataFor($object);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function hasMetadataFor(mixed $object): bool
     {
         return $this->metadataFactory->hasMetadataFor($object);
     }
 
-    public function validate(mixed $value, Constraint|array|null $constraints = null, string|GroupSequence|array|null $groups = null): ConstraintViolationListInterface
+    /**
+     * {@inheritdoc}
+     */
+    public function validate(mixed $value, Constraint|array $constraints = null, string|GroupSequence|array $groups = null): ConstraintViolationListInterface
     {
         return $this->startContext($value)
             ->validate($value, $constraints, $groups)
             ->getViolations();
     }
 
-    public function validateProperty(object $object, string $propertyName, string|GroupSequence|array|null $groups = null): ConstraintViolationListInterface
+    /**
+     * {@inheritdoc}
+     */
+    public function validateProperty(object $object, string $propertyName, string|GroupSequence|array $groups = null): ConstraintViolationListInterface
     {
         return $this->startContext($object)
             ->validateProperty($object, $propertyName, $groups)
             ->getViolations();
     }
 
-    public function validatePropertyValue(object|string $objectOrClass, string $propertyName, mixed $value, string|GroupSequence|array|null $groups = null): ConstraintViolationListInterface
+    /**
+     * {@inheritdoc}
+     */
+    public function validatePropertyValue(object|string $objectOrClass, string $propertyName, mixed $value, string|GroupSequence|array $groups = null): ConstraintViolationListInterface
     {
         // If a class name is passed, take $value as root
         return $this->startContext(\is_object($objectOrClass) ? $objectOrClass : $value)

@@ -4,6 +4,29 @@ require_once '../../Model/db_connection.php';
 require_once '../../Controller/citizen_con.php';
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
+$gender = $_SESSION['gender'];
+
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+    header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
+
 
 
 ?>
@@ -186,30 +209,18 @@ document.getElementById('baptismForm').addEventListener('submit', function(event
             </div>
             <div class="form-group">
                 <label for="firstname">Firstname of person to be baptized:</label>
-                <input type="text" class="form-control" id="firstname" name="firstname" placeholder="Enter Firstname"   <?php
-            if (isset($userDetails)) {
-                echo 'value="' . htmlspecialchars($userDetails['firstname']) . '"';
-            }
-            ?>
+                <input type="text" class="form-control" id="firstname" name="firstname" placeholder="Enter Firstname"  
         />
                 <span class="error" id="firstnameError"></span>
             </div>
             <div class="form-group">
                 <label for="lastname">Last Name of person to be baptized:</label>
-                <input type="text" class="form-control" id="lastname" name="lastname" placeholder="Enter Lastname"  <?php
-            if (isset($userDetails)) {
-                echo 'value="' . htmlspecialchars($userDetails['lastname']) . '"';
-            }
-            ?>/>
+                <input type="text" class="form-control" id="lastname" name="lastname" placeholder="Enter Lastname" />
                 <span class="error" id="lastnameError"></span>
             </div>
             <div class="form-group">
                 <label for="middlename">Middle Name of person to be baptized:</label>
-                <input type="text" class="form-control" id="middlename" name="middlename" placeholder="Enter Middlename"   <?php
-            if (isset($userDetails)) {
-                echo 'value="' . htmlspecialchars($userDetails['middlename']) . '"';
-            }
-            ?>/>
+                <input type="text" class="form-control" id="middlename" name="middlename" placeholder="Enter Middlename"   />
                 <span class="error" id="middlenameError"></span>
             </div>
             <input type="hidden" id="fullname" name="fullname" />
@@ -273,16 +284,29 @@ document.getElementById('baptismForm').addEventListener('submit', function(event
     </div>
     
 </div>
-            <div class="form-group">
-                <label for="father_name">Father's Fullname</label>
-                <input type="text" class="form-control" id="father_name" name="father_fullname" placeholder="Enter Father's Fullname" />
-                <span class="error" id="fatherNameError"></span>
-            </div>
-            <div class="form-group">
-                <label for="mother_name">Mother's Fullname</label>
-                <input type="text" class="form-control" id="mother_name" name="mother_fullname" placeholder="Enter Mother's Fullname" />
-                <span class="error" id="motherNameError"></span>
-            </div>
+<div class="form-group">
+    <label for="father_name">Father's Fullname</label>
+    <input type="text" class="form-control" id="father_name" name="father_fullname" placeholder="Enter Father's Fullname"
+        <?php
+        // Display father's name if user is male
+        if (isset($userDetails) && $userDetails['gender'] === 'Male') {
+            echo 'value="' . htmlspecialchars($userDetails['fullname']) . '"';
+        }
+        ?> />
+    <span class="error" id="fatherNameError"></span>
+</div>
+
+<div class="form-group">
+    <label for="mother_name">Mother's Fullname</label>
+    <input type="text" class="form-control" id="mother_name" name="mother_fullname" placeholder="Enter Mother's Fullname"
+        <?php
+        // Display mother's name if user is female
+        if (isset($userDetails) && $userDetails['gender'] === 'Female') {
+            echo 'value="' . htmlspecialchars($userDetails['fullname']) . '"';
+        }
+        ?> />
+    <span class="error" id="motherNameError"></span>
+</div>
         </div>
         <div class="col-md-6 col-lg-4">
             <div class="form-group">

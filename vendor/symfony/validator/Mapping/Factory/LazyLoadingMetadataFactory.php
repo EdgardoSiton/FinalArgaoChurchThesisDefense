@@ -49,13 +49,15 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
      */
     protected $loadedClasses = [];
 
-    public function __construct(?LoaderInterface $loader = null, ?CacheItemPoolInterface $cache = null)
+    public function __construct(LoaderInterface $loader = null, CacheItemPoolInterface $cache = null)
     {
         $this->loader = $loader;
         $this->cache = $cache;
     }
 
     /**
+     * {@inheritdoc}
+     *
      * If the method was called with the same class name (or an object of that
      * class) before, the same metadata instance is returned.
      *
@@ -74,7 +76,7 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
             throw new NoSuchMetadataException(sprintf('Cannot create metadata for non-objects. Got: "%s".', get_debug_type($value)));
         }
 
-        $class = ltrim(\is_object($value) ? $value::class : $value, '\\');
+        $class = ltrim(\is_object($value) ? \get_class($value) : $value, '\\');
 
         if (isset($this->loadedClasses[$class])) {
             return $this->loadedClasses[$class];
@@ -84,8 +86,8 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
             throw new NoSuchMetadataException(sprintf('The class or interface "%s" does not exist.', $class));
         }
 
-        $cacheItem = $this->cache?->getItem($this->escapeClassName($class));
-        if ($cacheItem?->isHit()) {
+        $cacheItem = null === $this->cache ? null : $this->cache->getItem($this->escapeClassName($class));
+        if ($cacheItem && $cacheItem->isHit()) {
             $metadata = $cacheItem->get();
 
             // Include constraints from the parent class
@@ -96,7 +98,9 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
 
         $metadata = new ClassMetadata($class);
 
-        $this->loader?->loadClassMetadata($metadata);
+        if (null !== $this->loader) {
+            $this->loader->loadClassMetadata($metadata);
+        }
 
         if (null !== $cacheItem) {
             $this->cache->save($cacheItem->set($metadata));
@@ -108,7 +112,7 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
         return $this->loadedClasses[$class] = $metadata;
     }
 
-    private function mergeConstraints(ClassMetadata $metadata): void
+    private function mergeConstraints(ClassMetadata $metadata)
     {
         if ($metadata->getReflectionClass()->isInterface()) {
             return;
@@ -133,13 +137,16 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function hasMetadataFor(mixed $value): bool
     {
         if (!\is_object($value) && !\is_string($value)) {
             return false;
         }
 
-        $class = ltrim(\is_object($value) ? $value::class : $value, '\\');
+        $class = ltrim(\is_object($value) ? \get_class($value) : $value, '\\');
 
         return class_exists($class) || interface_exists($class, false);
     }

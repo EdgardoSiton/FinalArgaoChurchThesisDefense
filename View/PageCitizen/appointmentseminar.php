@@ -7,6 +7,27 @@ $regId = $_SESSION['citizend_id'];
 $citizenController = new Citizen($conn);
 
 $pendingAppointments = $citizenController->getPendingCitizens(null, $regId);
+
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -96,54 +117,62 @@ $pendingAppointments = $citizenController->getPendingCitizens(null, $regId);
         </tr>
     </thead>
     <tbody>
-        <?php if (!empty($pendingAppointments)) {
-            foreach ($pendingAppointments as $index => $appointment) {
-                // Convert schedule and seminar times to 12-hour format
-                $scheduleStart = date('g:i A', strtotime($appointment['schedule_start_time']));
-                $scheduleEnd = date('g:i A', strtotime($appointment['schedule_end_time']));
-                $scheduleTime = $scheduleStart . ' - ' . $scheduleEnd;
+    <?php if (!empty($pendingAppointments)) {
+        foreach ($pendingAppointments as $index => $appointment) {
+            // Convert schedule times to 12-hour format
+            $scheduleStart = date('g:i A', strtotime($appointment['schedule_start_time']));
+            $scheduleEnd = date('g:i A', strtotime($appointment['schedule_end_time']));
+            $scheduleTime = $scheduleStart . ' - ' . $scheduleEnd;
 
+            // Check if seminar details exist, otherwise set to "No seminar"
+            if (!empty($appointment['seminar_starttime']) && !empty($appointment['seminar_endtime']) && !empty($appointment['seminar_date'])) {
                 $seminarStart = date('g:i A', strtotime($appointment['seminar_starttime']));
                 $seminarEnd = date('g:i A', strtotime($appointment['seminar_endtime']));
                 $seminarTime = $seminarStart . ' - ' . $seminarEnd;
-                ?>
-                <tr>
-                    <td><?= $index + 1; ?></td>
-                    <td><?= htmlspecialchars($appointment['citizen_name']); ?></td>
-                    <td><?= htmlspecialchars($appointment['type']); ?></td>
-                    <td><?= htmlspecialchars(date('F j, Y', strtotime($appointment['schedule_date']))); ?></td>
-                    <td><?= htmlspecialchars($scheduleTime); ?></td>
-                    <td><?= htmlspecialchars(date('F j, Y', strtotime($appointment['seminar_date']))); ?></td>
-                    <td><?= htmlspecialchars($seminarTime); ?></td>
-                    <td><?= htmlspecialchars($appointment['roles']); ?></td>
-                    <td><?= htmlspecialchars($appointment['payable_amount']); ?></td>
-                  
-                    
-                    <td>
-    <?php
-    $paymentUrl = ''; // Default URL
-    if ($appointment['event_name'] === 'Baptism') {
-        $paymentUrl = 'FillBaptismpayment.php';
-    } elseif ($appointment['event_name'] === 'Confirmation') {
-        $paymentUrl = 'ConfirmationPayment.php';
-    } elseif ($appointment['event_name'] === 'Wedding') {
-        $paymentUrl = 'FillWeddingFormpayment.php';
-    } elseif ($appointment['event_name'] === 'Funeral') {
-        $paymentUrl = 'FillFuneralPayment.php';
-    }
-    ?>
-    <a href="<?= htmlspecialchars($paymentUrl); ?>?appointment_id=<?= $appointment['appointment_id']; ?>" class="btn btn-primary">View</a>
-</td>
-
-                </tr>
-            <?php
+                $seminarDate = date('F j, Y', strtotime($appointment['seminar_date']));
+            } else {
+                $seminarTime = "No seminar";
+                $seminarDate = "No seminar";
             }
-        } else { ?>
+            ?>
             <tr>
-                <td colspan="11">No pending appointments found.</td>
+                <td><?= $index + 1; ?></td>
+                <td><?= htmlspecialchars($appointment['citizen_name']); ?></td>
+                <td><?= htmlspecialchars($appointment['type']); ?></td>
+                <td><?= htmlspecialchars(date('F j, Y', strtotime($appointment['schedule_date']))); ?></td>
+                <td><?= htmlspecialchars($scheduleTime); ?></td>
+                <td><?= htmlspecialchars($seminarDate); ?></td>
+                <td><?= htmlspecialchars($seminarTime); ?></td>
+                <td><?= htmlspecialchars($appointment['roles']); ?></td>
+                <td><?= htmlspecialchars($appointment['payable_amount']); ?></td>
+                
+                <td>
+                <?php
+                $paymentUrl = ''; // Default URL
+                if ($appointment['event_name'] === 'Baptism' || $appointment['event_name'] === 'MassBaptism') {
+                    $paymentUrl = 'FillBaptismpayment.php';
+                } elseif ($appointment['event_name'] === 'Confirmation' || $appointment['event_name'] === 'MassConfirmation') {
+                    $paymentUrl = 'FillConfirmationFormPayment.php';
+                } elseif ($appointment['event_name'] === 'Wedding'|| $appointment['event_name'] === 'MassWedding') {
+                    $paymentUrl = 'FillWeddingFormpayment.php';
+                } elseif ($appointment['event_name'] === 'Funeral') {
+                    $paymentUrl = 'FillFuneralPayment.php';
+                }elseif ($appointment['event_name'] === 'RequestForm') {
+                  $paymentUrl = 'FillInsideRequestPayment.php';
+              }
+                ?>
+                <a href="<?= htmlspecialchars($paymentUrl); ?>?appointment_id=<?= $appointment['appointment_id']; ?>" class="btn btn-primary">View</a>
+                </td>
             </tr>
-        <?php } ?>
-    </tbody>
+        <?php
+        }
+    } else { ?>
+        <tr>
+            <td colspan="11">No pending appointments found.</td>
+        </tr>
+    <?php } ?>
+</tbody>
+
 </table>
 
                     </div>

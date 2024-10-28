@@ -21,14 +21,14 @@ use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
  */
 final class CompiledClassMetadataFactory implements ClassMetadataFactoryInterface
 {
-    private array $compiledClassMetadata = [];
+    private $compiledClassMetadata = [];
 
-    private array $loadedClasses = [];
+    private $loadedClasses = [];
 
-    public function __construct(
-        string $compiledClassMetadataFile,
-        private readonly ClassMetadataFactoryInterface $classMetadataFactory,
-    ) {
+    private $classMetadataFactory;
+
+    public function __construct(string $compiledClassMetadataFile, ClassMetadataFactoryInterface $classMetadataFactory)
+    {
         if (!file_exists($compiledClassMetadataFile)) {
             throw new \RuntimeException("File \"{$compiledClassMetadataFile}\" could not be found.");
         }
@@ -39,11 +39,15 @@ final class CompiledClassMetadataFactory implements ClassMetadataFactoryInterfac
         }
 
         $this->compiledClassMetadata = $compiledClassMetadata;
+        $this->classMetadataFactory = $classMetadataFactory;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getMetadataFor(string|object $value): ClassMetadataInterface
     {
-        $className = \is_object($value) ? $value::class : $value;
+        $className = \is_object($value) ? \get_class($value) : $value;
 
         if (!isset($this->compiledClassMetadata[$className])) {
             return $this->classMetadataFactory->getMetadataFor($value);
@@ -66,9 +70,12 @@ final class CompiledClassMetadataFactory implements ClassMetadataFactoryInterfac
         return $this->loadedClasses[$className];
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function hasMetadataFor(mixed $value): bool
     {
-        $className = \is_object($value) ? $value::class : $value;
+        $className = \is_object($value) ? \get_class($value) : $value;
 
         return isset($this->compiledClassMetadata[$className]) || $this->classMetadataFactory->hasMetadataFor($value);
     }

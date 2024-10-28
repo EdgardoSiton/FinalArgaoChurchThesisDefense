@@ -92,10 +92,7 @@
                 <li><a class="dropdown-item" href="profile.php">My Profile</a></li>
                 <li><a class="dropdown-item" href="">My Appointment </a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="">Need Help?</a></li>
-                <li><a class="dropdown-item" href="">Switch to User Panel</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="../../index.php">Sign Out</a></li>
+                <li><a class="dropdown-item" href="../../index.php?action=logout">Sign Out</a></li>
             </ul>
           </div>
         </div>

@@ -1,6 +1,43 @@
-<?php
+<?php 
+
+
 require_once '../../Controller/login_con.php';
 
+// Prevent browser from caching the login page
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0"); // HTTP 1.1.
+header("Pragma: no-cache"); // HTTP 1.0.
+header("Expires: 0"); // Proxies.
+
+// Check if the user wants to log out
+if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    // Destroy all session data to log the user out
+    session_unset();
+    session_destroy();
+    
+    // Redirect to login page after logout
+    header("Location: index.php");
+    exit();
+}
+
+// Check if the user is already logged in
+if (isset($_SESSION['email']) && isset($_SESSION['user_type'])) {
+    // Redirect to specific dashboard based on user type if already logged in
+    switch ($_SESSION['user_type']) {
+        case "Staff":
+            header("Location: ../PageStaff/StaffDashboard.php");
+            exit();
+        case "Citizen":
+            header("Location: ../PageCitizen/CitizenPage.php");
+            exit();
+        case "Admin":
+            header("Location: ../PageAdmin/AdminDashboard.php");
+            exit();
+    }
+}
+
+// If not logged in, show login form below this point
+$staff = new Staff($conn);
+$announcements = $staff->getAnnouncements();
 ?>
 
 <!DOCTYPE html>
@@ -402,11 +439,11 @@ gap:25px;
 
             <div class="input_box">
             <div class="input_group">
+    <input type="tel" class="form-control" name="phone" id="phone" placeholder="Phone number (e.g., +639xxxxxxxxx)" value="+63">
+    <i class="uil uil-envelope-alt email"></i>
+    <div class="error" id="phone_error"></div>
+</div>
 
-            <input type="tel" class="form-control" name="phone" id="phone" placeholder="Phone number ">
-              <i class="uil uil-envelope-alt email"></i>
-              <div class="error" id="phone_error"></div>
-              </div>
               <div class="input_group">
               <input type="text" class="form-control" name="email" id="emails" placeholder="name@example.com">
               <div class="error" id="email_error"></div>
@@ -429,6 +466,7 @@ gap:25px;
           </div>
 
             </div>
+            <br>
             <br>
             <button type="submit" class="button" >Register</button>
             <div class="login_signup">Already have an account? <a href="#" id="sign-in-signbutton">Signin</a></div>
@@ -474,6 +512,45 @@ document.getElementById("sign-in-signbutton").addEventListener("click", function
     document.querySelector(".sign-in-form").style.display = "block";
 });
 
+
+function showError(inputId, errorMessage) {
+    const errorElement = document.getElementById(inputId + "_error");
+    if (errorElement) {
+        errorElement.textContent = errorMessage;
+    }
+}
+
+function clearError(inputId) {
+    const errorElement = document.getElementById(inputId + "_error");
+    if (errorElement) {
+        errorElement.textContent = "";
+    }
+}
+
+function validatePhoneNumber() {
+    const phoneInput = document.getElementById('phone');
+    // Remove any non-numeric characters except the + sign
+    phoneInput.value = phoneInput.value.replace(/[^0-9+]/g, '');
+
+    // Ensure the input starts with +63
+    if (!phoneInput.value.startsWith('+63')) {
+        phoneInput.value = '+63';
+    }
+
+    // Limit the length to +63 and 10 digits (13 characters in total)
+    if (phoneInput.value.length > 13) {
+        phoneInput.value = phoneInput.value.slice(0, 13);
+    }
+
+    // Show error if the number of digits is incorrect
+    const phoneError = document.getElementById('phone');
+    if (phoneInput.value.length < 13) {
+        phoneError.textContent = "Please enter a valid 10-digit phone number after +63.";
+    } else {
+        phoneError.textContent = "";
+    }
+}
+
       function validateForm() {
     // Clear previous errors
     clearErrors();
@@ -494,8 +571,6 @@ document.getElementById("sign-in-signbutton").addEventListener("click", function
         isValid = false;
     }
 
-
-    // Validate email
     const email = document.getElementById("emails").value.trim();
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email === "") {
@@ -507,6 +582,20 @@ document.getElementById("sign-in-signbutton").addEventListener("click", function
     } else if (!email.endsWith("@gmail.com")) {
         showError("email", "Email must end with @gmail.com");
         isValid = false;
+    } else {
+        // Make an AJAX call to check if email exists
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "../../Controller/check_email.php", false); // Use synchronous request
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                if (xhr.responseText === "exists") {
+                    showError("email", "Email already exists.");
+                    isValid = false;
+                }
+            }
+        };
+        xhr.send("email=" + encodeURIComponent(email));
     }
 
     // Validate gender
@@ -516,10 +605,13 @@ document.getElementById("sign-in-signbutton").addEventListener("click", function
         isValid = false;
     }
 
-    // Validate phone
+    // Validate phone number
     const phone = document.getElementById("phone").value.trim();
     if (phone === "") {
         showError("phone", "Phone number is required");
+        isValid = false;
+    } else if (!phone.startsWith("+63") || phone.length !== 13) {
+        showError("phone", "Phone number must be in the format +63 followed by 10 digits.");
         isValid = false;
     }
 
@@ -534,7 +626,7 @@ document.getElementById("sign-in-signbutton").addEventListener("click", function
         showError("c_date_birth", "Invalid Date of Birth");
         isValid = false;
     } else if (!isAtLeast15YearsOld(year, month, day)) {
-        showError("c_date_birth", "You must be at least 15 years old");
+        showError("c_date_birth", "You must be at least 16 years old");
         isValid = false;
     }
 
@@ -554,20 +646,35 @@ document.getElementById("sign-in-signbutton").addEventListener("click", function
 
     // Validate password
     const password = document.getElementById("passwords").value.trim();
+    const passwordPattern = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[.!@#]).{1,}$/; 
     if (password === "") {
         showError("password", "Password is required");
         isValid = false;
+    }else if (!passwordPattern.test(password)) {
+        showError("password", "Password must start with a capital letter and contain at least one number and one of these special characters: .!@#");
+        isValid = false;
     }
+  
 
     // Validate confirm password
     const confirmPassword = document.getElementById("confirmpassword").value.trim();
     if (confirmPassword !== password) {
-        showError("confirmpassword", "Passwords do not match");
+        showError("confirmpassword", "ConfirmationPasswords do not match");
+        isValid = false;
+    }
+    if (confirmPassword === "") {
+        showError("confirmpassword", "ConfirmationPassword is required");
         isValid = false;
     }
 
-    return isValid;
+    if (password !== confirmPassword) {
+        showError("password", "Passwords do not match");
+        isValid = false;
+    }
+
+    return isValid; // Ensure to return the overall validity
 }
+
 
 function showError(inputId, errorMessage) {
     const inputElement = document.getElementById(inputId);
@@ -615,10 +722,10 @@ function isAtLeast15YearsOld(year, month, day) {
     const age = today.getFullYear() - birthDate.getFullYear();
 
     if (today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day)) {
-        return age - 1 >= 15;
+        return age - 1 >= 16;
     }
 
-    return age >= 15;
+    return age >= 16;
 }
 
         const sign_in_signbutton = document.querySelector("#sign-in-signbutton");

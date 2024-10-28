@@ -13,185 +13,246 @@ class Staff {
         $this->conn = $conn;
         $this->regId = $regId;
         $this->updatePendingAppointments();
-    }   
-        // Method to get appointments for a specific priest
-        public function getPriestAppointmentSchedule($priestId) {
-            // Retrieve the appointments for the specific priest
-            $sql = "
-            SELECT 
-                'baptism' AS type,
-                b.baptism_id AS id,
-                b.role AS roles,
-                b.event_name AS Event_Name,
-                c.fullname AS citizen_name, 
-                s.date AS schedule_date,
-                s.start_time AS schedule_time,
-                b.priest_id,
-                priest.fullname AS priest_name
-            FROM 
-                schedule s
-            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
-            JOIN baptismfill b ON s.schedule_id = b.schedule_id
-            LEFT JOIN citizen priest ON b.priest_id = priest.citizend_id AND priest.user_type = 'Priest'  
-            WHERE b.priest_id = ? 
-                AND b.pr_status = 'Pending'
-            UNION ALL
-            SELECT 
-                'confirmation' AS type,
-                cf.confirmationfill_id AS id,
-                cf.role AS roles,
-                cf.event_name AS Event_Name,
-                c.fullname AS citizen_name,
-                s.date AS schedule_date,
-                s.start_time AS schedule_time,
-                cf.priest_id,
-                priest.fullname AS priest_name
-            FROM 
-                schedule s
-            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
-            JOIN confirmationfill cf ON s.schedule_id = cf.schedule_id
-            LEFT JOIN citizen priest ON cf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
-            WHERE cf.priest_id = ?
-                AND cf.pr_status = 'Pending'
-            UNION ALL
-            SELECT 
-                'marriage' AS type,
-                mf.marriagefill_id AS id,
-                mf.role AS roles,
-                mf.event_name AS Event_Name,
-                c.fullname AS citizen_name,
-                s.date AS schedule_date,
-                s.start_time AS schedule_time,
-                mf.priest_id,
-                priest.fullname AS priest_name
-            FROM 
-                schedule s
-            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
-            JOIN marriagefill mf ON s.schedule_id = mf.schedule_id
-            LEFT JOIN citizen priest ON mf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
-            WHERE mf.priest_id = ?
-                AND mf.pr_status = 'Pending'
-            UNION ALL
-            SELECT 
-                'defuctom' AS type,
-                df.defuctomfill_id AS id,
-                df.role AS roles,
-                df.event_name AS Event_Name,
-                c.fullname AS citizen_name,
-                s.date AS schedule_date,
-                s.start_time AS schedule_time,
-                df.priest_id,
-                priest.fullname AS priest_name
-            FROM 
-                schedule s
-            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
-            JOIN defuctomfill df ON s.schedule_id = df.schedule_id
-            LEFT JOIN citizen priest ON df.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
-            WHERE df.priest_id = ?
-                AND df.pr_status = 'Pending'
-            UNION ALL
-            SELECT 
-                'requestform' AS type,
-                rf.req_id AS id,
-                rf.role AS roles,
-                rf.req_category AS Event_Name,
-                rf.req_person AS citizen_name,
-                s.date AS schedule_date,
-                s.start_time AS schedule_time,
-                rf.priest_id,
-                priest.fullname AS priest_name
-            FROM 
-                schedule s
-            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
-            JOIN req_form rf ON s.schedule_id = rf.schedule_id
-            LEFT JOIN citizen priest ON rf.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
-            WHERE rf.priest_id = ?
-                AND rf.pr_status = 'Pending'
-            ORDER BY schedule_date ASC
-            ";
-        
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("iiiii", $priestId, $priestId, $priestId, $priestId, $priestId);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            $appointments = [];
-            if ($result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    $appointments[] = $row;
-                }
+        $this->deleteExpiredAnnouncements();
+    }  
+    public function addMassSchedule($cal_date, $startTime, $endTime, $priest_id) {
+        // Start transaction
+        mysqli_begin_transaction($this->conn);
+
+        try {
+            // Step 1: Insert into schedule table
+            $scheduleSql = "INSERT INTO schedule(date, start_time, end_time) VALUES (?, ?, ?)";
+            $stmtSchedule = mysqli_prepare($this->conn, $scheduleSql);
+            mysqli_stmt_bind_param($stmtSchedule, 'sss', $cal_date, $startTime, $endTime);
+            mysqli_stmt_execute($stmtSchedule);
+
+            // Get the last inserted schedule_id
+            $schedule_id = mysqli_insert_id($this->conn);
+
+            // Step 2: Insert into priest_approval table
+            $priestApprovalSql = "INSERT INTO priest_approval(priest_id, pr_status, assigned_time) VALUES (?, 'Approved', NOW())";
+            $stmtApproval = mysqli_prepare($this->conn, $priestApprovalSql);
+            mysqli_stmt_bind_param($stmtApproval, 's', $priest_id);
+            mysqli_stmt_execute($stmtApproval);
+
+            // Get the last inserted approval_id
+            $approval_id = mysqli_insert_id($this->conn);
+
+            // Step 3: Insert into mass_schedule table
+            $massScheduleSql = "INSERT INTO mass_schedule(schedule_id, approval_id, mass_title) VALUES (?, ?, 'Mass')";
+            $stmtMassSchedule = mysqli_prepare($this->conn, $massScheduleSql);
+            mysqli_stmt_bind_param($stmtMassSchedule, 'ii', $schedule_id, $approval_id);
+            mysqli_stmt_execute($stmtMassSchedule);
+
+            // Commit transaction if all inserts were successful
+            mysqli_commit($this->conn);
+            return 'Event added successfully';
+        } catch (Exception $e) {
+            // Rollback transaction if an error occurs
+            mysqli_rollback($this->conn);
+            return 'Error: ' . $e->getMessage();
+        } finally {
+            // Close statements
+            if (isset($stmtSchedule)) {
+                mysqli_stmt_close($stmtSchedule);
             }
-        
-            $stmt->close();
-        
-            return $appointments;
+            if (isset($stmtApproval)) {
+                mysqli_stmt_close($stmtApproval);
+            }
+            if (isset($stmtMassSchedule)) {
+                mysqli_stmt_close($stmtMassSchedule);
+            }
         }
+    } 
+    public function generatemassconfirmationSeminarReport($eventType) {
+        $stmt = $this->conn->prepare("
+            SELECT 
+                cf.confirmationfill_id, 
+                cf.fullname AS fullnames, 
+                ass.p_status, 
+                cf.event_name AS type,
+                ass.reference_number AS ref_number, 
+                ass.payable_amount, 
+                s1.date AS appointment_schedule_date,
+                s2.date AS seminar_date,
+                priest.fullname AS priest_fullname
+            FROM 
+                announcement a
+            LEFT JOIN 
+                confirmationfill cf ON cf.announcement_id = a.announcement_id
+                LEFT JOIN 
+               appointment_schedule ass ON cf.confirmationfill_id = ass.confirmation_id
+            LEFT JOIN 
+                schedule s1 ON a.schedule_id = s1.schedule_id -- For regular schedule
+            LEFT JOIN 
+                schedule s2 ON a.seminar_id = s2.schedule_id -- For seminar schedule
+            LEFT JOIN 
+                priest_approval pa ON pa.approval_id = a.approval_id
+            LEFT JOIN 
+                citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+            WHERE 
+                a.event_type = ? 
+                AND cf.status = 'Approved'
+        ");
+        
+        $stmt->bind_param('s', $eventType);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+    public function generatemassmarriageSeminarReport($eventType) {
+        $stmt = $this->conn->prepare("
+            SELECT 
+                mf.marriagefill_id, 
+                CONCAT(mf.groom_name, ' & ', mf.bride_name) AS fullnames,
+                ass.p_status, 
+                mf.event_name AS type,
+                ass.reference_number AS ref_number, 
+                ass.payable_amount, 
+                s1.date AS appointment_schedule_date,
+                s2.date AS seminar_date,
+                priest.fullname AS priest_fullname
+            FROM 
+                announcement a
+            LEFT JOIN 
+                marriagefill mf ON mf.announcement_id = a.announcement_id
+                LEFT JOIN 
+               appointment_schedule ass ON mf.marriagefill_id = ass.marriage_id
+            LEFT JOIN 
+                schedule s1 ON a.schedule_id = s1.schedule_id -- For regular schedule
+            LEFT JOIN 
+                schedule s2 ON a.seminar_id = s2.schedule_id -- For seminar schedule
+            LEFT JOIN 
+                priest_approval pa ON pa.approval_id = a.approval_id
+            LEFT JOIN 
+                citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+            WHERE 
+                a.event_type = ? 
+                AND mf.status = 'Approved'
+        ");
+        
+        $stmt->bind_param('s', $eventType);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+public function generateSeminarReport($eventType) {
+    $stmt = $this->conn->prepare("
+        SELECT 
+        a.speaker_ann AS speaker,
+            bf.baptism_id, 
+            bf.fullname AS fullnames, 
+            ass.p_status, 
+            bf.event_name AS type,
+            ass.reference_number AS ref_number, 
+            ass.payable_amount, 
+            s1.date AS appointment_schedule_date,
+            s2.date AS seminar_date,
+            priest.fullname AS priest_fullname
+        FROM 
+            announcement a
+        LEFT JOIN 
+            baptismfill bf ON bf.announcement_id = a.announcement_id
+            LEFT JOIN 
+           appointment_schedule ass ON bf.baptism_id = ass.baptismfill_id
+        LEFT JOIN 
+            schedule s1 ON a.schedule_id = s1.schedule_id -- For regular schedule
+        LEFT JOIN 
+            schedule s2 ON a.seminar_id = s2.schedule_id -- For seminar schedule
+        LEFT JOIN 
+            priest_approval pa ON pa.approval_id = a.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+        WHERE 
+            a.event_type = ? 
+            AND bf.status = 'Approved'
+    ");
     
-        // Method to update pending appointments
-        private function updatePendingAppointments() {
-            // SQL query for baptismfill
-            $sqlBaptism = "
-                UPDATE baptismfill b
-                JOIN schedule s ON b.schedule_id = s.schedule_id
-                SET b.pr_status = NULL, b.priest_id = NULL
-                WHERE b.pr_status = 'Pending'
-                AND (b.assigned_time < NOW() - INTERVAL 24 HOUR);
-            ";
-        
-            // SQL query for confirmationfill
-            $sqlConfirmation = "
-                UPDATE confirmationfill cf
-                JOIN schedule s ON cf.schedule_id = s.schedule_id
-                SET cf.pr_status = NULL, cf.priest_id = NULL
-                WHERE cf.pr_status = 'Pending'
-                AND (cf.assigned_time < NOW() - INTERVAL 24 HOUR);
-            ";
-        
-            // SQL query for marriagefill
-            $sqlMarriage = "
-                UPDATE marriagefill mf
-                JOIN schedule s ON mf.schedule_id = s.schedule_id
-                SET mf.pr_status = NULL, mf.priest_id = NULL
-                WHERE mf.pr_status = 'Pending'
-                AND (mf.assigned_time < NOW() - INTERVAL 24 HOUR);
-            ";
-        
-            // SQL query for defuctomfill
-            $sqlDefuctom = "
-                UPDATE defuctomfill df
-                JOIN schedule s ON df.schedule_id = s.schedule_id
-                SET df.pr_status = NULL, df.priest_id = NULL
-                WHERE df.pr_status = 'Pending'
-                AND (df.assigned_time < NOW() - INTERVAL 24 HOUR);
-            ";
-        
-            // SQL query for req_form
-            $sqlRequestForm = "
-                UPDATE req_form rf
-                JOIN schedule s ON rf.schedule_id = s.schedule_id
-                SET rf.pr_status = NULL, rf.priest_id = NULL
-                WHERE rf.pr_status = 'Pending'
-                AND (rf.assigned_time < NOW() - INTERVAL 24 HOUR);
-            ";
-        
-            // Execute each query separately
-            $this->conn->prepare($sqlBaptism)->execute();
-            $this->conn->prepare($sqlConfirmation)->execute();
-            $this->conn->prepare($sqlMarriage)->execute();
-            $this->conn->prepare($sqlDefuctom)->execute();
-            $this->conn->prepare($sqlRequestForm)->execute();
+    $stmt->bind_param('s', $eventType);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
+    
+    private function deleteExpiredAnnouncements() {
+        // SQL statement to delete announcements based on the schedule date and end time
+        $deleteSql = "
+        DELETE a, s, se FROM announcement a
+        JOIN schedule s ON a.schedule_id = s.schedule_id
+        LEFT JOIN schedule se ON a.seminar_id = se.schedule_id
+        WHERE DATE(s.date) = CURDATE() AND NOW() > s.end_time
+        ";
+    
+        if ($deleteStmt = $this->conn->prepare($deleteSql)) {
+            $deleteStmt->execute();
+            $deleteStmt->close();
+        } else {
+            // Log error or handle it as needed
+            // echo 'Error preparing statement: ' . $this->conn->error;
         }
-        
-        
+    }
+    
+    private function updatePendingAppointments() {
+        // SQL query for baptismfill
+        $sqlBaptism = "
+            UPDATE priest_approval pa
+           
+            SET pa.pr_status = NULL, pa.priest_id = NULL
+            WHERE pa.pr_status = 'Pending'
+            AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
+        ";
+    
+        // SQL query for confirmationfill
+        $sqlConfirmation = "
+        UPDATE priest_approval pa
+           
+        SET pa.pr_status = NULL, pa.priest_id = NULL
+        WHERE pa.pr_status = 'Pending'
+        AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
+        ";
+    
+        // SQL query for marriagefill
+        $sqlMarriage = "
+        UPDATE priest_approval pa
+           
+        SET pa.pr_status = NULL, pa.priest_id = NULL
+        WHERE pa.pr_status = 'Pending'
+        AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
+        ";
+    
+        // SQL query for defuctomfill
+        $sqlDefuctom = "
+        UPDATE priest_approval pa
+           
+        SET pa.pr_status = NULL, pa.priest_id = NULL
+        WHERE pa.pr_status = 'Pending'
+        AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
+        ";
+    
+        // SQL query for req_form
+        $sqlRequestForm = "
+        UPDATE priest_approval pa
+           
+        SET pa.pr_status = NULL, pa.priest_id = NULL
+        WHERE pa.pr_status = 'Pending'
+        AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
+        ";
+    
+        // Execute each query separately
+        $this->conn->prepare($sqlBaptism)->execute();
+        $this->conn->prepare($sqlConfirmation)->execute();
+        $this->conn->prepare($sqlMarriage)->execute();
+        $this->conn->prepare($sqlDefuctom)->execute();
+        $this->conn->prepare($sqlRequestForm)->execute();
+    }
     public function generateWeddingReport() {
         // SQL query to fetch wedding report data
         $sql = "
             SELECT 
+            a.speaker_app AS Speaker,
                 a.reference_number AS ref_number,
                 'Marriage' AS type,
                 mf.status AS status,
                 mf.groom_name AS fullnames,
-                mf.pr_status AS approve_priest,
+                pa.pr_status AS approve_priest,
                 mf.marriagefill_id AS id,
                 mf.role AS roles,
                 mf.event_name AS Event_Name,
@@ -200,7 +261,7 @@ class Staff {
                 s.start_time AS schedule_time,
                 a.appsched_id,
                 a.marriage_id,
-                mf.priest_id,
+               pa.priest_id,
                 priest.fullname AS priest_name,
                 a.schedule_id AS appointment_schedule_id,
                 a.payable_amount AS payable_amount,
@@ -216,7 +277,8 @@ class Staff {
             JOIN marriagefill mf ON s.schedule_id = mf.schedule_id
             JOIN appointment_schedule a ON mf.marriagefill_id = a.marriage_id
             JOIN schedule sch ON a.schedule_id = sch.schedule_id
-            LEFT JOIN citizen priest ON mf.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
+            JOIN priest_approval pa ON pa.approval_id = mf.approval_id
+            LEFT JOIN citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
             WHERE 
                 mf.status != 'Pending' 
                 AND mf.status = 'Approved'
@@ -248,61 +310,63 @@ class Staff {
         $currentWeekEnd = date('Y-m-d', strtotime('sunday this week'));
     
         // Define the SQL query to get Baptism appointments for the current week
-        $sql = "SELECT 
-            a.reference_number AS ref_number,
-            'Baptism' AS type,
-            b.status AS status,
-            b.fullname AS fullnames,
-            b.pr_status AS approve_priest,
-            b.baptism_id AS id,
-            b.role AS roles,
-            b.event_name AS Event_Name,
-            c.fullname AS citizen_name, 
-            s.date AS schedule_date,
-            s.start_time AS schedule_time,
-            a.appsched_id,
-            a.baptismfill_id,
-            b.priest_id,
-            priest.fullname AS priest_name,
-            a.schedule_id AS appointment_schedule_id,
-            a.payable_amount AS payable_amount,
-            a.status AS c_status,
-            a.p_status AS p_status,
-            sch.date AS appointment_schedule_date,  
-            sch.start_time AS appointment_schedule_start_time,
-            sch.end_time AS appointment_schedule_end_time,
-            b.created_at 
-        FROM 
-            schedule s
-        LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
-        JOIN baptismfill b ON s.schedule_id = b.schedule_id
-        JOIN appointment_schedule a ON b.baptism_id = a.baptismfill_id
-        JOIN schedule sch ON a.schedule_id = sch.schedule_id  
-        LEFT JOIN citizen priest ON b.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
-        WHERE 
-            b.status != 'Pending' AND 
-            b.status = 'Approved' AND 
-            (a.status = 'Process' OR a.p_status = 'Unpaid')
-            AND sch.date BETWEEN ? AND ?";
-    
-        // Prepare the SQL statement
-        $stmt = $this->conn->prepare($sql);
-        if (!$stmt) {
-            die('Error preparing statement: ' . $this->conn->error);
+            $sql = "SELECT 
+               a.speaker_app AS speaker,
+                a.reference_number AS ref_number,
+                'Baptism' AS type,
+                b.status AS status,
+                b.fullname AS fullnames,
+                pa.pr_status AS approve_priest,
+                b.baptism_id AS id,
+                b.role AS roles,
+                b.event_name AS Event_Name,
+                c.fullname AS citizen_name, 
+                s.date AS schedule_date,
+                s.start_time AS schedule_time,
+                a.appsched_id,
+                a.baptismfill_id,
+                pa.priest_id,
+                priest.fullname AS priest_name,
+                a.schedule_id AS appointment_schedule_id,
+                a.payable_amount AS payable_amount,
+                a.status AS c_status,
+                a.p_status AS p_status,
+                sch.date AS appointment_schedule_date,  
+                sch.start_time AS appointment_schedule_start_time,
+                sch.end_time AS appointment_schedule_end_time,
+                b.created_at 
+            FROM 
+                schedule s
+            LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
+            JOIN baptismfill b ON s.schedule_id = b.schedule_id
+            JOIN appointment_schedule a ON b.baptism_id = a.baptismfill_id
+            JOIN schedule sch ON a.schedule_id = sch.schedule_id  
+            JOIN priest_approval pa ON pa.approval_id = b.approval_id
+        LEFT JOIN citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+            WHERE 
+                b.status != 'Pending' AND 
+                b.status = 'Approved' AND 
+                (a.status = 'Process' OR a.p_status = 'Unpaid')
+                AND sch.date BETWEEN ? AND ?";
+        
+            // Prepare the SQL statement
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                die('Error preparing statement: ' . $this->conn->error);
+            }
+        
+            // Bind parameters (use 'ss' for two string parameters)
+            $stmt->bind_param('ss', $currentWeekStart, $currentWeekEnd);
+        
+            // Execute the query
+            $stmt->execute();
+        
+            // Fetch the results
+            $result = $stmt->get_result();
+            $reports = $result->fetch_all(MYSQLI_ASSOC);
+        
+            return $reports;
         }
-    
-        // Bind parameters (use 'ss' for two string parameters)
-        $stmt->bind_param('ss', $currentWeekStart, $currentWeekEnd);
-    
-        // Execute the query
-        $stmt->execute();
-    
-        // Fetch the results
-        $result = $stmt->get_result();
-        $reports = $result->fetch_all(MYSQLI_ASSOC);
-    
-        return $reports;
-    }
     
     
     public function getRequestAppointment($statusFilter = null) {
@@ -310,7 +374,7 @@ class Staff {
         $query = "
             SELECT 
             
-                r.pr_status AS approve_priest,
+                pa.pr_status AS approve_priest,
                 s.schedule_id, 
                 s.citizen_id, 
                 s.date, 
@@ -345,7 +409,10 @@ class Staff {
             LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
             JOIN req_form r ON s.schedule_id = r.schedule_id
             JOIN appointment_schedule a ON r.req_id = a.request_id
-            LEFT JOIN citizen priest ON r.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+            LEFT JOIN 
+            priest_approval pa ON pa.approval_id = r.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
             WHERE 
                 r.status = 'Approved'";
     
@@ -382,7 +449,7 @@ class Staff {
         // Prepare SQL query with INNER JOIN and LEFT JOIN on three tables
         $query = "
             SELECT 
-            r.pr_status AS approve_priest,
+            pa.pr_status AS approve_priest,
                 s.schedule_id, 
                 s.citizen_id, 
                 s.date, 
@@ -401,7 +468,7 @@ class Staff {
                 r.role, 
                 r.created_at, 
                 priest.fullname AS priest_name,
-                r.pr_status
+                pa.pr_status
                 
               
                 FROM 
@@ -410,7 +477,10 @@ class Staff {
     
         JOIN 
            req_form r ON s.schedule_id = r.schedule_id
-           LEFT JOIN citizen priest ON r.priest_id = priest.citizend_id AND priest.user_type = 'Priest'
+           LEFT JOIN 
+           priest_approval pa ON pa.approval_id = r.approval_id
+       LEFT JOIN 
+           citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
            WHERE 
          r.status = 'Pending'";
     
@@ -445,10 +515,9 @@ class Staff {
         c.phone, 
         mf.event_name 
     FROM 
-        citizen c 
-
-    JOIN 
-        marriagefill mf ON c.citizend_id = mf.citizen_id 
+        marriagefill mf
+   LEFT JOIN 
+    citizen c  ON c.citizend_id = mf.citizen_id 
     WHERE 
         mf.marriagefill_id = ?"; // Ensure this column name matches your schema
     
@@ -494,22 +563,21 @@ class Staff {
         }
     }
     public function deleteMassBaptism($massbaptismfillId) {
-        // Combine logic to retrieve contact info and title
+        // Adjust query to handle cases where citizen data might be null (walk-in)
         $sql = "
         SELECT 
-        c.citizend_id, 
-        c.fullname,
-        c.email, 
-        c.phone, 
-        b.event_name 
-    FROM 
-        citizen c 
-
-    JOIN 
-        baptismfill b ON c.citizend_id = b.citizen_id 
-    WHERE 
-        b.baptism_id = ?"; // Ensure this column name matches your schema
-    
+            c.citizend_id, 
+            c.fullname, 
+            c.email, 
+            c.phone, 
+            b.event_name 
+        FROM 
+            baptismfill b 
+        LEFT JOIN 
+            citizen c ON c.citizend_id = b.citizen_id 
+        WHERE 
+            b.baptism_id = ?"; // Adjusted query to use LEFT JOIN for optional citizen data
+        
         $stmt = $this->conn->prepare($sql);
         if (!$stmt) {
             return json_encode(['success' => false, 'message' => 'SQL prepare error.']);
@@ -520,20 +588,18 @@ class Staff {
         $result = $stmt->get_result();
     
         if ($result->num_rows > 0) {
-            // Retrieve contact info
+            // Retrieve contact info, but handle cases where citizen might not exist
             $contactInfo = $result->fetch_assoc();
-            $email = $contactInfo['email'];
-            $citizen_name = $contactInfo['fullname'];
+            $email = $contactInfo['email'] ?? null; // Set to null if not available (walk-in case)
+            $citizen_name = $contactInfo['fullname'] ?? 'Walk-in Client'; // Default name for walk-ins
             $title = $contactInfo['event_name'];
         } else {
             return json_encode(['success' => false, 'message' => 'No contact info found.']);
         }
     
         // Prepare SQL to delete baptism and associated schedule
-        $deleteSql = "DELETE b
-                      FROM baptismfill b 
-                      WHERE b.baptism_id = ?"; // Ensure this field matches your schema
-    
+        $deleteSql = "DELETE FROM baptismfill WHERE baptism_id = ?"; // Ensure this field matches your schema
+        
         $deleteStmt = $this->conn->prepare($deleteSql);
         if (!$deleteStmt) {
             return json_encode(['success' => false, 'message' => 'SQL prepare error during delete.']);
@@ -542,15 +608,21 @@ class Staff {
         $deleteStmt->bind_param("i", $massbaptismfillId);
     
         if ($deleteStmt->execute()) {
-            // Send decline email after deletion
-            $emailSent = $this->sendDeclineEmail($email, $citizen_name, "Your Appointment has been deleted.",
-            "Dear {$citizen_name},<br><br>Your $title Appointment has been deleted due to unavailable capacity.<br>If you have any questions, please contact us.<br>");
-    
-            return $emailSent ? true : json_encode(['success' => false, 'message' => 'Email notification failed.']);
+            // Check if email exists before attempting to send
+            if ($email) {
+                $emailSent = $this->sendDeclineEmail($email, $citizen_name, "Your Appointment has been deleted.",
+                "Dear {$citizen_name},<br><br>Your {$title} Appointment has been deleted due to unavailable capacity or incorrect information.<br>If you have any questions, please contact us.<br>");
+                
+                return $emailSent ? true : json_encode(['success' => false, 'message' => 'Email notification failed.']);
+            } else {
+                // For walk-ins, you can choose to skip email or log a different message
+                return json_encode(['success' => true, 'message' => 'Walk-in appointment declined. No email sent.']);
+            }
         } else {
             return json_encode(['success' => false, 'message' => 'Failed to delete the baptism.']);
         }
     }
+    
     public function deleteDefuctom($defuctom_id) {
         // Combine logic to retrieve contact info and title
         $sql = "
@@ -561,9 +633,9 @@ class Staff {
         c.phone, 
         df.event_name 
     FROM 
-        citizen c 
-        JOIN 
-        schedule s ON c.citizend_id = s.citizen_id 
+    schedule s
+       LEFT JOIN 
+        citizen c  ON c.citizend_id = s.citizen_id 
         JOIN 
         defuctomfill df ON s.schedule_id = df.schedule_id 
     WHERE 
@@ -621,9 +693,9 @@ class Staff {
         c.phone, 
         mf.event_name 
     FROM 
-        citizen c 
-        JOIN 
-        schedule s ON c.citizend_id = s.citizen_id 
+    schedule s
+      LEFT JOIN 
+        citizen c ON c.citizend_id = s.citizen_id 
         JOIN 
         marriagefill mf ON s.schedule_id = mf.schedule_id 
     WHERE 
@@ -681,10 +753,10 @@ class Staff {
         c.phone, 
         cf.event_name 
     FROM 
-        citizen c 
-
-    JOIN 
-        confirmationfill cf ON c.citizend_id = cf.citizen_id 
+      
+        confirmationfill cf
+    LEFT JOIN 
+    citizen c  ON c.citizend_id = cf.citizen_id 
     WHERE 
         cf.confirmationfill_id = ?"; // Ensure this column name matches your schema
     
@@ -740,9 +812,9 @@ class Staff {
                 c.phone, 
                 b.event_name 
             FROM 
-                citizen c 
-            JOIN 
-                schedule s ON c.citizend_id = s.citizen_id 
+            schedule s
+          LEFT  JOIN 
+            citizen c ON c.citizend_id = s.citizen_id 
             JOIN 
                 baptismfill b ON s.schedule_id = b.schedule_id 
             WHERE 
@@ -1353,38 +1425,47 @@ public function displaySundaysDropdown($schedule_id) {
     }
     
     public function getAnnouncements() {
-        $sql = "SELECT 
-                    a.announcement_id,
-                    a.event_type AS event_type,  
-                    a.priest_id, 
-                    a.seminar_id, 
-                    a.event_type AS announcement_event_type, 
-                    a.title, 
-                    a.description, 
-                    a.schedule_id AS announcement_schedule_id, 
-                    a.date_created, 
-                    a.capacity, 
-                    a.pending_capacity,
-                  c.fullname AS fullname,
-                    s1.date AS schedule_date, 
-                    s1.start_time AS schedule_start_time, 
-                    s1.end_time AS schedule_end_time, 
-                    s1.event_type AS schedule_event_type,
-                    s2.citizen_id AS seminar_citizen_id, 
-                    s2.date AS seminar_date, 
-                    s2.start_time AS seminar_start_time, 
-                    s2.end_time AS seminar_end_time, 
-                    s2.event_type AS seminar_event_type
-                FROM 
-                    announcement AS a
-                    LEFT JOIN 
+        $sql = "
+        SELECT 
+        a.speaker_ann,
+        a.announcement_id,
+        a.event_type AS event_type,  
+      
+        a.seminar_id, 
+        a.event_type AS announcement_event_type, 
+        a.title, 
+        a.description, 
+        a.schedule_id AS announcement_schedule_id, 
+        a.date_created, 
+        a.capacity, 
+        a.pending_capacity,
+        priest.fullname AS fullname,
+        s1.date AS schedule_date, 
+        s1.start_time AS schedule_start_time, 
+        s1.end_time AS schedule_end_time, 
+       
+      
+        s2.date AS seminar_date, 
+        s2.start_time AS seminar_start_time, 
+        s2.end_time AS seminar_end_time, 
+      
+        pa.approval_id,          -- From priest_approval
+        pa.priest_id AS approval_priest_id,  -- Priest from priest_approval
+        pa.pr_status,            -- Priest status from priest_approval
+        pa.assigned_time         -- Assigned time from priest_approval
+    FROM 
+        announcement AS a
+    LEFT JOIN 
         schedule s1 ON a.schedule_id = s1.schedule_id  -- Joining for regular schedule
     LEFT JOIN 
-        schedule s2 ON a.seminar_id = s2.schedule_id     
-                LEFT JOIN 
-                    citizen AS c ON a.priest_id = c.citizend_id  -- Join based on citizen_id
-                ORDER BY 
-                    a.date_created DESC";  // Corrected to use alias 'a'
+        schedule s2 ON a.seminar_id = s2.schedule_id   -- Joining for seminar schedule
+
+    LEFT JOIN 
+        priest_approval pa ON pa.approval_id = a.approval_id
+    LEFT JOIN 
+        citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active' -- Join based on citizen_id
+    ORDER BY 
+        a.date_created DESC";  // Corrected to use alias 'a'
     
         $result = $this->conn->query($sql);
     
@@ -1597,14 +1678,14 @@ public function approveConfirmation($confirmationfill_id) {
 }
 
 //--------------------------------------------------------------------------------//
-public function insertwAppointment($weddingffill_id, $payableAmount, $scheduleId) {
+public function insertwAppointment($weddingffill_id, $payableAmount,$eventspeaker, $scheduleId) {
     $referenceNumber = $this->generateReferenceNumber();
-   $sql = "INSERT INTO appointment_schedule (marriage_id, payable_amount,schedule_id, status, p_status,reference_number)
-            VALUES (?, ?,?,  'Process', 'Unpaid',?)";
+   $sql = "INSERT INTO appointment_schedule (marriage_id, payable_amount,speaker_app,schedule_id, status, p_status,reference_number)
+            VALUES (?, ?,?,?,  'Process', 'Unpaid',?)";
     $stmt = $this->conn->prepare($sql);
 
     // Bind parameters: 'i' for integer (baptismfill_id, priest_id), 'd' for decimal/float (payable_amount)
-    $stmt->bind_param("idis",$weddingffill_id ,$payableAmount,$scheduleId,$referenceNumber);
+    $stmt->bind_param("idsis",$weddingffill_id ,$payableAmount,$eventspeaker,$scheduleId,$referenceNumber);
 
     // Execute the statement and check for errors
     if ($stmt->execute()) {
@@ -1831,39 +1912,43 @@ public function approveFuneral( $defuctomfill_id) {
 
 public function fetchBaptismFill($status) {
     $query = "
-        SELECT 
-        priest.fullname AS Priest,
-        b.pr_status AS priest_status,
-            c.citizend_id,
-            b.fullname AS citizen_name,
-            s.date AS schedule_date,
-            s.start_time AS schedule_start_time,
-            s.end_time AS schedule_end_time,
-            b.event_name AS event_name,
-            b.status AS approval_status,
-            b.role AS roles,
-            b.baptism_id AS id,
-            'Baptism' AS type,
-            b.father_fullname,
-            b.pbirth,
-            b.mother_fullname,
-            b.religion,
-            b.parent_resident,
-            b.godparent,
-            b.gender,
-            b.c_date_birth,
-            b.age,
-            b.address,
-            b.created_at 
-            FROM 
-            schedule s
-        LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
-   
-        JOIN 
-            baptismfill b ON s.schedule_id = b.schedule_id
-            LEFT JOIN citizen priest ON b.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
-        WHERE 
-            b.status = ?";
+    SELECT 
+    pa.pr_reason AS reason,
+    priest.fullname AS Priest,
+    pa.pr_status AS priest_status,
+    c.citizend_id AS citizen_id,
+    b.fullname AS citizen_name,
+    s.date AS schedule_date,
+    s.start_time AS schedule_start_time,
+    s.end_time AS schedule_end_time,
+    b.event_name AS event_name,
+    b.status AS approval_status,
+    b.role AS roles,
+    b.baptism_id AS id,
+    'Baptism' AS type,
+    b.father_fullname,
+    b.pbirth,
+    b.mother_fullname,
+    b.religion,
+    b.parent_resident,
+    b.godparent,
+    b.gender,
+    b.c_date_birth,
+    b.age,
+    b.address,
+    b.created_at
+FROM 
+    schedule s
+JOIN 
+    baptismfill b ON s.schedule_id = b.schedule_id
+LEFT JOIN 
+    citizen c ON c.citizend_id = b.citizen_id
+LEFT JOIN 
+    priest_approval pa ON pa.approval_id = b.approval_id
+LEFT JOIN 
+    citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+WHERE 
+    b.status = ? ";
     
     $stmt = $this->conn->prepare($query);
     $stmt->bind_param("s", $status);
@@ -1874,8 +1959,9 @@ public function fetchBaptismFill($status) {
 public function fetchConfirmationFill($status) {
     $query = "
         SELECT 
+        pa.pr_reason AS reason,
         priest.fullname AS Priest,
-        cf.pr_status AS priest_status,
+       pa.pr_status AS priest_status,
             c.citizend_id,
             cf.fullname AS citizen_name,
             s.date AS schedule_date,
@@ -1903,7 +1989,10 @@ public function fetchConfirmationFill($status) {
  
         JOIN 
             confirmationfill cf ON s.schedule_id = cf.schedule_id
-            LEFT JOIN citizen priest ON cf.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
+            LEFT JOIN 
+            priest_approval pa ON pa.approval_id = cf.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
         WHERE 
             cf.status = ?";
     
@@ -1916,8 +2005,9 @@ public function fetchConfirmationFill($status) {
 public function fetchMarriageFill($status) {
     $query = "
         SELECT 
+        pa.pr_reason AS reason,
         priest.fullname AS Priest,
-        mf.pr_status AS priest_status,
+        pa.pr_status AS priest_status,
             c.citizend_id,
             c.fullname AS citizen_name,
             s.date AS schedule_date,
@@ -1951,7 +2041,10 @@ public function fetchMarriageFill($status) {
    
         JOIN 
             marriagefill mf ON s.schedule_id = mf.schedule_id
-            LEFT JOIN citizen priest ON mf.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
+            LEFT JOIN 
+            priest_approval pa ON pa.approval_id = mf.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
         WHERE 
             mf.status = ?";
     
@@ -1964,8 +2057,9 @@ public function fetchMarriageFill($status) {
 public function fetchDefuctomFill($status) {
     $query = "
         SELECT 
+        pa.pr_reason AS reason,
         priest.fullname AS Priest,
-        df.pr_status AS priest_status,
+        pa.pr_status AS priest_status,
             c.citizend_id,
             c.fullname AS citizen_name,
             s.date AS schedule_date,
@@ -1995,7 +2089,10 @@ public function fetchDefuctomFill($status) {
 
         JOIN 
             defuctomfill df ON s.schedule_id = df.schedule_id
-            LEFT JOIN citizen priest ON df.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
+            LEFT JOIN 
+            priest_approval pa ON pa.approval_id = df.approval_id
+        LEFT JOIN 
+            citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
         WHERE 
             df.status = ?";
     
@@ -2063,11 +2160,11 @@ public function getPendingCitizen($eventType = null, $status = 'Pending') {
 
 public function getConfirmationAppointments($statusFilter = null) {
     $sql = "SELECT 
-    a.reference_number AS ref_number,
+        a.reference_number AS ref_number,
         'Confirmation' AS type,
         cf.status AS status,
         cf.fullname AS fullnames,
-        cf.pr_status AS approve_priest,
+        pa.pr_status AS approve_priest,
         cf.confirmationfill_id AS id,
         cf.role AS roles,
         cf.c_date_birth AS birth,
@@ -2078,36 +2175,36 @@ public function getConfirmationAppointments($statusFilter = null) {
         s.start_time AS schedule_time,
         a.appsched_id,
         a.baptismfill_id,
-        cf.priest_id,
+        pa.priest_id,
         priest.fullname AS priest_name,
         a.schedule_id AS appointment_schedule_id,
         a.payable_amount AS payable_amount,
         a.status AS c_status,
         a.p_status AS p_status,
-        sch.date AS appointment_schedule_date,  
-        sch.start_time AS appointment_schedule_start_time,
-        sch.end_time AS appointment_schedule_end_time,
+       
         cf.c_created_at 
     FROM 
         schedule s
     LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
     JOIN confirmationfill cf ON s.schedule_id = cf.schedule_id
     JOIN appointment_schedule a ON cf.confirmationfill_id = a.confirmation_id
-    JOIN schedule sch ON a.schedule_id = sch.schedule_id  
-    LEFT JOIN citizen priest ON cf.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
+ 
+    JOIN priest_approval pa ON pa.approval_id = cf.approval_id
+    LEFT JOIN citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
     WHERE 
         cf.status != 'Pending' AND 
         cf.status = 'Approved' ";
-   // Modify query based on statusFilter
-   if ($statusFilter === 'CompletedPaid') {
-    // If the dropdown is selected, show Completed and Paid
-    $sql .= " AND (a.status = 'Completed' AND a.p_status = 'Paid')";
-} else {
-    // If the dropdown is not clicked, show Process or Unpaid
-    $sql .= " AND (a.status = 'Process' OR a.p_status = 'Unpaid')";
-}
+    
+    // Modify query based on statusFilter
+    if ($statusFilter === 'CompletedPaid') {
+        $sql .= " AND (a.status = 'Completed' AND a.p_status = 'Paid')";
+    } else {
+        $sql .= " AND (a.status = 'Process' OR a.p_status = 'Unpaid')";
+    }
+
     return $this->fetchAppointments($sql);
 }
+
 
 public function getBaptismAppointments($statusFilter = null) {
     $sql = "SELECT 
@@ -2115,7 +2212,7 @@ public function getBaptismAppointments($statusFilter = null) {
         'Baptism' AS type,
         b.status AS status,
         b.fullname AS fullnames,
-        b.pr_status AS approve_priest,
+        pa.pr_status AS approve_priest,
         b.baptism_id AS id,
         b.role AS roles,
         b.event_name AS Event_Name,
@@ -2124,7 +2221,7 @@ public function getBaptismAppointments($statusFilter = null) {
         s.start_time AS schedule_time,
         a.appsched_id,
         a.baptismfill_id,
-        b.priest_id,
+        pa.priest_id,
         priest.fullname AS priest_name,
         a.schedule_id AS appointment_schedule_id,
         a.payable_amount AS payable_amount,
@@ -2140,27 +2237,29 @@ public function getBaptismAppointments($statusFilter = null) {
     JOIN baptismfill b ON s.schedule_id = b.schedule_id
     JOIN appointment_schedule a ON b.baptism_id = a.baptismfill_id
     JOIN schedule sch ON a.schedule_id = sch.schedule_id  
-    LEFT JOIN citizen priest ON b.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
+    JOIN priest_approval pa ON pa.approval_id = b.approval_id
+    LEFT JOIN citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
     WHERE 
         b.status != 'Pending' AND 
         b.status = 'Approved'";
-   // Modify query based on statusFilter
-   if ($statusFilter === 'CompletedPaid') {
-    // If the dropdown is selected, show Completed and Paid
-    $sql .= " AND (a.status = 'Completed' AND a.p_status = 'Paid')";
-} else {
-    // If the dropdown is not clicked, show Process or Unpaid
-    $sql .= " AND (a.status = 'Process' OR a.p_status = 'Unpaid')";
-}
+    
+    // Modify query based on statusFilter
+    if ($statusFilter === 'CompletedPaid') {
+        $sql .= " AND (a.status = 'Completed' AND a.p_status = 'Paid')";
+    } else {
+        $sql .= " AND (a.status = 'Process' OR a.p_status = 'Unpaid')";
+    }
+
     return $this->fetchAppointments($sql);
 }
+
 public function getMarriageAppointments($statusFilter = null) {
     $sql = "SELECT 
       a.reference_number AS ref_number,
         'Marriage' AS type,
         mf.status AS status,
         mf.groom_name AS fullnames,
-        mf.pr_status AS approve_priest,
+        pa.pr_status AS approve_priest,
         mf.marriagefill_id AS id,
         mf.role AS roles,
         mf.event_name AS Event_Name,
@@ -2169,7 +2268,7 @@ public function getMarriageAppointments($statusFilter = null) {
         s.start_time AS schedule_time,
         a.appsched_id,
         a.marriage_id,
-        mf.priest_id,
+        pa.priest_id,
         priest.fullname AS priest_name,
         a.schedule_id AS appointment_schedule_id,
         a.payable_amount AS payable_amount,
@@ -2185,28 +2284,29 @@ public function getMarriageAppointments($statusFilter = null) {
     JOIN marriagefill mf ON s.schedule_id = mf.schedule_id
     JOIN appointment_schedule a ON mf.marriagefill_id = a.marriage_id
     JOIN schedule sch ON a.schedule_id = sch.schedule_id
-    LEFT JOIN citizen priest ON mf.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
+    JOIN priest_approval pa ON pa.approval_id = mf.approval_id
+    LEFT JOIN citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
     WHERE 
         mf.status != 'Pending' AND 
         mf.status = 'Approved' ";
-   // Modify query based on statusFilter
-   if ($statusFilter === 'CompletedPaid') {
-    // If the dropdown is selected, show Completed and Paid
-    $sql .= " AND (a.status = 'Completed' AND a.p_status = 'Paid')";
-} else {
-    // If the dropdown is not clicked, show Process or Unpaid
-    $sql .= " AND (a.status = 'Process' OR a.p_status = 'Unpaid')";
-}
+    
+    // Modify query based on statusFilter
+    if ($statusFilter === 'CompletedPaid') {
+        $sql .= " AND (a.status = 'Completed' AND a.p_status = 'Paid')";
+    } else {
+        $sql .= " AND (a.status = 'Process' OR a.p_status = 'Unpaid')";
+    }
 
     return $this->fetchAppointments($sql);
 }
+
 public function getDefuctomAppointments($statusFilter = null) {
     $sql = "SELECT 
       a.reference_number AS ref_number,
         'Defuctom' AS type,
         df.status AS status,
         df.d_fullname AS fullnames,
-        df.pr_status AS approve_priest,
+        pa.pr_status AS approve_priest,
         df.defuctomfill_id AS id,
         df.role AS roles,
         df.event_name AS Event_Name,
@@ -2215,7 +2315,7 @@ public function getDefuctomAppointments($statusFilter = null) {
         s.start_time AS schedule_time,
         a.appsched_id,
         a.defuctom_id,  
-        df.priest_id,
+        pa.priest_id,
         priest.fullname AS priest_name,
         a.schedule_id AS appointment_schedule_id,
         a.payable_amount AS payable_amount,
@@ -2227,22 +2327,22 @@ public function getDefuctomAppointments($statusFilter = null) {
     LEFT JOIN citizen c ON c.citizend_id = s.citizen_id 
     JOIN defuctomfill df ON s.schedule_id = df.schedule_id
     JOIN appointment_schedule a ON df.defuctomfill_id = a.defuctom_id
-    LEFT JOIN citizen priest ON df.priest_id = priest.citizend_id AND priest.user_type = 'Priest' 
+    JOIN priest_approval pa ON pa.approval_id = df.approval_id
+    LEFT JOIN citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
     WHERE 
         df.status != 'Pending' AND 
         df.status = 'Approved' ";
 
-       // Modify query based on statusFilter
-       if ($statusFilter === 'CompletedPaid') {
-        // If the dropdown is selected, show Completed and Paid
+    // Modify query based on statusFilter
+    if ($statusFilter === 'CompletedPaid') {
         $sql .= " AND (a.status = 'Completed' AND a.p_status = 'Paid')";
     } else {
-        // If the dropdown is not clicked, show Process or Unpaid
         $sql .= " AND (a.status = 'Process' OR a.p_status = 'Unpaid')";
     }
 
     return $this->fetchAppointments($sql);
 }
+
 private function fetchAppointments($sql) {
         $result = $this->conn->query($sql);
         
@@ -2621,16 +2721,98 @@ private function fetchAppointments($sql) {
         return $row['count'];
     }
 
-    public function getRecentNotifications() {
-        $query = "SELECT * FROM notifications ORDER BY time DESC LIMIT 4";
+    public function getRecentCitizenUpdates() {
+        $query = "SELECT citizend_id, fullname, c_current_time 
+                  FROM citizen 
+                  WHERE YEARWEEK(c_current_time, 1) = YEARWEEK(CURDATE(), 1)
+                  AND r_status = 'Pending'
+                  ORDER BY c_current_time DESC";
         $result = $this->conn->query($query);
-
+    
         if ($result === FALSE) {
             die("Error: " . $this->conn->error);
         }
-
-        $notifications = $result->fetch_all(MYSQLI_ASSOC);
-        return $notifications;
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    
+    public function getRecentBaptismFills() {
+        $query = "SELECT baptism_id, fullname, event_name, created_at AS c_current_time  
+                  FROM baptismfill 
+                  WHERE YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)
+                  AND status = 'Pending'
+                  AND role = 'Online'
+                  ORDER BY created_at DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    
+    public function getRecentConfirmationFills() {
+        $query = "SELECT confirmationfill_id, fullname, event_name, c_created_at AS c_current_time  
+                  FROM confirmationfill 
+                  WHERE YEARWEEK(c_created_at, 1) = YEARWEEK(CURDATE(), 1)
+                  AND status = 'Pending'
+                  AND role = 'Online'
+                  ORDER BY c_created_at DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    
+    public function getRecentDefuctomFills() {
+        $query = "SELECT defuctomfill_id, d_fullname AS fullname, event_name, d_created_at AS c_current_time  
+                  FROM defuctomfill 
+                  WHERE YEARWEEK(d_created_at, 1) = YEARWEEK(CURDATE(), 1)
+                  AND status = 'Pending'
+                  AND role = 'Online'
+                  ORDER BY d_created_at DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    
+    public function getRecentMarriageFills() {
+        $query = "SELECT mf.marriagefill_id, CONCAT(mf.groom_name, ' and ', mf.bride_name) AS full_names, mf.event_name, mf.m_created_at AS c_current_time  
+                  FROM marriagefill mf
+                  WHERE YEARWEEK(mf.m_created_at, 1) = YEARWEEK(CURDATE(), 1)
+                  AND status = 'Pending'
+                  AND role = 'Online'
+                  ORDER BY mf.m_created_at DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    public function getRecentRequestFormFills() {
+        $query = "SELECT rf.req_id,  req_person, rf.req_category, rf.created_at AS c_current_time  
+                  FROM req_form rf
+                  WHERE YEARWEEK(rf.created_at, 1) = YEARWEEK(CURDATE(), 1)
+                  AND status = 'Pending'
+                  AND role = 'Online'
+                  ORDER BY rf.created_at DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
     }
 
     public function markNotificationsAsRead() {
@@ -2642,7 +2824,7 @@ private function fetchAppointments($sql) {
     public function getApprovedRegistrations() {
         $sql = "SELECT `citizend_id`, `fullname`, `email`, `gender`, `phone`, `c_date_birth`, `age`, `address`, `valid_id`, `password`, `user_type`, `r_status`, `c_current_time`
                 FROM `citizen`
-                WHERE `r_status` = 'Approve'";
+                WHERE `r_status` = 'Approved'";
         $result = $this->conn->query($sql);
 
         if ($result === FALSE) {
@@ -2656,23 +2838,24 @@ private function fetchAppointments($sql) {
         return $approvedRegistrations;
     }
 
-    public function addAnnouncement($announcementData, $scheduleData, $scheduleDatas) {
+    public function addAnnouncement($announcementData, $scheduleData, $scheduleDatas, $approvalId) {
         // SQL statements
         $scheduleSql = "INSERT INTO schedule(date, start_time, end_time) VALUES (?, ?, ?)";
-        $announcementSql = "INSERT INTO announcement(event_type, title, description, schedule_id, seminar_id, date_created, capacity, priest_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        
+        $priestApprovalSql = "INSERT INTO priest_approval(priest_id, pr_status, assigned_time) VALUES (?, 'Approved', NOW())";
+        $announcementSql = "INSERT INTO announcement(approval_id, event_type, title, description, schedule_id, seminar_id, date_created, capacity,speaker_ann) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)";
+    
         $this->conn->begin_transaction();
     
         try {
-            // Prepare and execute the first schedule insert statement for the announcement
+            // Insert schedule for announcement
             $scheduleStmt = $this->conn->prepare($scheduleSql);
             $scheduleStmt->bind_param("sss", $scheduleData['date'], $scheduleData['start_time'], $scheduleData['end_time']);
             $scheduleStmt->execute();
-            
+    
             // Get the last inserted schedule_id for announcement
             $scheduleId = $this->conn->insert_id;
     
-            // Prepare and execute the second schedule insert statement for the seminar
+            // Insert schedule for seminar
             $scheduleStmt2 = $this->conn->prepare($scheduleSql);
             $scheduleStmt2->bind_param("sss", $scheduleDatas['date'], $scheduleDatas['start_time'], $scheduleDatas['end_time']);
             $scheduleStmt2->execute();
@@ -2680,17 +2863,26 @@ private function fetchAppointments($sql) {
             // Get the last inserted schedule_id for seminar
             $seminarId = $this->conn->insert_id;
     
-            // Prepare and execute the announcement insert statement
+            // Insert into priest_approval
+            $priestApprovalStmt = $this->conn->prepare($priestApprovalSql);
+            $priestApprovalStmt->bind_param("i", $approvalId);
+            $priestApprovalStmt->execute();
+    
+            // Get the last inserted approval_id
+            $approvalId = $this->conn->insert_id;
+    
+            // Insert announcement using approval_id
             $announcementStmt = $this->conn->prepare($announcementSql);
-            $announcementStmt->bind_param("sssiisii", 
+            $announcementStmt->bind_param("isssiisis", 
+                $approvalId,  // approval_id from priest_approval
                 $announcementData['event_type'], 
                 $announcementData['title'], 
                 $announcementData['description'], 
-                $scheduleId,  // Use the generated schedule_id for announcement
-                $seminarId,   // Use the generated schedule_id for seminar
+                $scheduleId,  // schedule_id for announcement
+                $seminarId,   // schedule_id for seminar
                 $announcementData['date_created'], 
                 $announcementData['capacity'],
-                $announcementData['priest_id']
+                $announcementData['speaker_ann']
             );
             $announcementStmt->execute();
     
@@ -2700,6 +2892,7 @@ private function fetchAppointments($sql) {
             // Close the statements
             $scheduleStmt->close();
             $scheduleStmt2->close();
+            $priestApprovalStmt->close();
             $announcementStmt->close();
     
             return true;
@@ -2711,11 +2904,13 @@ private function fetchAppointments($sql) {
             // Close the statements if they are open
             if ($scheduleStmt) $scheduleStmt->close();
             if ($scheduleStmt2) $scheduleStmt2->close();
+            if ($priestApprovalStmt) $priestApprovalStmt->close();
             if ($announcementStmt) $announcementStmt->close();
     
             return false;
         }
     }
+    
     
     public function fetchMarriageEvents() {
         $query = "

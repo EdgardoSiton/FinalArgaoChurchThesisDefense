@@ -18,6 +18,26 @@ $staff = new Staff($conn);
 // Fetch available priests based on the selected schedule
 $priests = $citizen->getAvailablePriests($scheduleDate, $startTime, $endTime);
 
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 
 ?>
 
@@ -511,6 +531,11 @@ small {
     </select>
     <span class="error" id="seminarError"></span>
 </div>
+<div class="form-group">
+                        <label for="eventTitle1">Seminar Speaker</label>
+                        <input type="text" class="form-control" id="eventTitle1" name="eventspeaker" placeholder="Enter Amount">
+                    </div>
+
 
 <div class="form-group">
     <label for="pay_amount">Payable Amount</label>

@@ -1,10 +1,28 @@
 <?php
+session_start();
+$email = $_SESSION['email'];
+$nme = $_SESSION['fullname'];
+$regId = $_SESSION['citizend_id'];
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
 
-require_once '../../Model/staff_mod.php';
-require_once '../../Controller/fetchpending_con.php';
-require_once '../../Model/db_connection.php';
-require_once '../../Model/citizen_mod.php';
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
 
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 
 ?>
 
@@ -110,7 +128,8 @@ small {
         
      
         <div class="container">
-            <div class="page-inner">
+            <div class="pa
+            ge-inner">
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
@@ -118,66 +137,53 @@ small {
                         <div class="card-title">Priest Registration Account</div>
                     </div>
                     <div class="card-body">
-                    <form method="post" action="../../Controller/citizen_con.php" onsubmit="return validateForm()">
+                    <form method="POST" action=""  enctype="multipart/form-data" onsubmit="return validateForm()"class="sign-up-form">
                     
-    <input type="hidden" name="walkinbaptism_id" name="form_type" value="baptism">
+                    <input type="hidden" name="signup_forms" value="1">
     <div class="row">
         <div class="col-md-6 col-lg-4">
 
             <div class="form-group">
-                <label for="firstname">Firstname of person to be baptized:</label>
-                <input type="text" class="form-control" id="firstname" name="firstname" placeholder="Enter Firstname"   
-        />
-                <span class="error" id="firstnameError"></span>
+                <label for="firstname">Firstname of Priest:</label>
+                <input type="text" class="form-control" name="first_name" id="first_name" placeholder="First Name">  
+        
+                <div class="error" id="first_name_error"></div>  
             </div>
             <div class="form-group">
-                <label for="lastname">Last Name of person to be baptized:</label>
-                <input type="text" class="form-control" id="lastname" name="lastname" placeholder="Enter Lastname"  />
-                <span class="error" id="lastnameError"></span>
+                <label for="lastname">Last Name of Priest:</label>
+                <input type="text" class="form-control" name="last_name" id="last_name" placeholder="Last Name">
+                <div class="error" id="last_name_error"></div>
             </div>
             <div class="form-group">
-                <label for="middlename">Middle Name of person to be baptized:</label>
-                <input type="text" class="form-control" id="middlename" name="middlename" placeholder="Enter Middlename"  />
-                <span class="error" id="middlenameError"></span>
+                <label for="middlename">Middle Name of Priest:</label>
+                <input type="text" class="form-control" name="middle_name" id="middle_name" placeholder="Middle Name">
+                <div class="error" id="middle_name_error"></div>
             </div>
             <input type="hidden" id="fullname" name="fullname" />
             <div class="form-group">
                 <label for="address">Address</label>
                 <textarea class="form-control" id="address" name="address" placeholder="Enter Address"></textarea>
-                <span class="error" id="addressError"></span>
+                <div class="error" id="address_error"></div>
             </div>
             <div class="form-group">
                 <label>Gender</label><br />
-                <div class="d-flex">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="gender" id="flexRadioDefault1" value="Male" />
-                        <label class="form-check-label" for="flexRadioDefault1">Male</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="gender" id="flexRadioDefault2" value="Female" />
-                        <label class="form-check-label" for="flexRadioDefault2">Female</label>
-                    </div>
-                </div>
-                <span class="error" id="genderError"></span>
+                <select class="form-control" name="gender"  class="input_box" id="gender" placeholder="name@example.com">
+            <option value="" disabled selected>Select gender</option>
+            <option>Male</option>
+            <option>Female</option>
+        </select>
+                <div class="error" id="gender_error"></div>
             </div>
-            <div class="form-group">
-                <label for="religion">Religion</label>
-                <input type="text" class="form-control" id="religion" name="religion" placeholder="Enter Religion" />
-                <span class="error" id="religionError"></span>
-            </div>
+
         </div>
         <div class="col-md-6 col-lg-4">
      
-            <div class="form-group">
-                <label for="pbirth">Place of Birth</label>
-                <input type="text" class="form-control" id="pbirth" name="pbirth" placeholder="Enter Place of Birth" />
-                <span class="error" id="pbirthError"></span>
-            </div>
+    
             <div class="form-group">
     <div class="birthday-input">
         <label for="month">Date of Birth</label>
         <div class="birthday-selectors">
-            <select id="months" name="month">
+            <select id="month" name="month">
                 <option value="">Month</option>
                 <option value="01">January</option>
                 <option value="02">February</option>
@@ -193,7 +199,7 @@ small {
                 <option value="12">December</option>
             </select>
 
-            <select id="days" name="day">
+            <select id="day" name="day">
                 <option value="">Day</option>
                 <!-- Generate options 1 to 31 -->
                 <?php for ($i = 1; $i <= 31; $i++): ?>
@@ -201,7 +207,7 @@ small {
                 <?php endfor; ?>
             </select>
 
-            <select id="years" name="year">
+            <select id="year" name="year">
                 <option value="">Year</option>
                 <!-- Generate options from 1900 to current year -->
                 <?php for ($i = date('Y'); $i >= 1900; $i--): ?>
@@ -210,42 +216,40 @@ small {
             </select>
         </div>
       
-                    <span class="error" id="dobError"></span>
+        <div class="error" id="c_date_birth_error"></div>
                 
     </div>
     
 </div>
             <div class="form-group">
-                <label for="father_name">Father's Fullname</label>
-                <input type="text" class="form-control" id="father_name" name="father_fullname" placeholder="Enter Father's Fullname" />
-                <span class="error" id="fatherNameError"></span>
+                <label for="father_name">Phone Number</label>
+                <input type="tel" class="form-control" name="phone" id="phone" placeholder="Phone number ">
+                <div class="error" id="phone_error"></div>
             </div>
             <div class="form-group">
-                <label for="mother_name">Mother's Fullname</label>
-                <input type="text" class="form-control" id="mother_name" name="mother_fullname" placeholder="Enter Mother's Fullname" />
-                <span class="error" id="motherNameError"></span>
+                <label for="mother_name">GMAIL</label>
+                <input type="text" class="form-control" name="email" id="emails" placeholder="name@example.com">
+                <div class="error" id="email_error"></div>
             </div>
         </div>
         <div class="col-md-6 col-lg-4">
    
             <div class="form-group">
-                <label for="parents_residence">Parents Residence</label>
-                <textarea class="form-control" id="parents_residence" name="parent_resident" placeholder="Enter Parents Residence"></textarea>
-                <span class="error" id="parentsResidenceError"></span>
+                <label for="parents_residence">Password</label>
+                <input type="password" class="form-control" id="passwords" name="password" placeholder="Password">
+                <div class="error" id="password_error"></div>
             </div>
             <div class="form-group">
-                <label for="godparents">List Of GodParents</label>
-                <textarea class="form-control" id="godparents" name="godparent" placeholder="Enter List Of GodParents"></textarea>
-                <span class="error" id="godparentsError"></span>
+                <label for="godparents">ConfirmPassword</label>
+                <input type="password" class="form-control" id="confirmpassword" name="confirmpassword" placeholder="Confirm Password">
+                <div class="error" id="confirmpassword_error"></div>
             </div>
         </div>
     </div>
 
     <div class="card-action">
-        <button type="submit" class="btn btn-success">Submit</button>
-        <button type="button" class="btn btn-danger" onclick="window.location.href='your_cancel_url.php'">Cancel</button>
-        <button type="button" class="btn btn-info" onclick="clearForm()">Clear</button>
-    </div>
+    <button type="submit" class="btn btn-success" >Register</button>
+          </div>
 </form>
                     </div>
                 </div>
@@ -256,92 +260,143 @@ small {
 <script>
 
 function validateForm() {
-    let isValid = true;
+        // Clear previous errors
+        clearErrors();
 
-    // Helper function to validate field
-    function validateField(id, errorId, message) {
-        const field = document.getElementById(id);
-        const value = field.value.trim();
-        if (value === '') {
-            document.getElementById(errorId).innerText = message;
-            field.classList.add('error');
+        let isValid = true;
+
+        // Validate first name
+        const firstName = document.getElementById("first_name").value.trim();
+        if (firstName === "") {
+            showError("first_name", "First Name is required");
             isValid = false;
-        } else {
-            document.getElementById(errorId).innerText = '';
-            field.classList.remove('error');
+        }
+
+        // Validate last name
+        const lastName = document.getElementById("last_name").value.trim();
+        if (lastName === "") {
+            showError("last_name", "Last Name is required");
+            isValid = false;
+        }
+
+        // Validate address
+        const address = document.getElementById("address").value.trim();
+        if (address === "") {
+            showError("address", "Address is required");
+            isValid = false;
+        }
+
+        // Validate gender
+        const gender = document.getElementById("gender").value;
+        if (gender === "") {
+            showError("gender", "Gender is required");
+            isValid = false;
+        }
+
+        // Validate phone
+        const phone = document.getElementById("phone").value.trim();
+        if (phone === "") {
+            showError("phone", "Phone number is required");
+            isValid = false;
+        }
+
+        // Validate email
+        const email = document.getElementById("emails").value.trim();
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (email === "") {
+            showError("email", "Email is required");
+            isValid = false;
+        } else if (!emailPattern.test(email)) {
+            showError("email", "Invalid email format");
+            isValid = false;
+        } else if (!email.endsWith("@gmail.com")) {
+            showError("email", "Email must end with @gmail.com");
+            isValid = false;
+        }
+
+        // Validate date of birth
+        const month = document.getElementById("month").value;
+        const day = document.getElementById("day").value;
+        const year = document.getElementById("year").value;
+        if (month === "" || day === "" || year === "") {
+            showError("c_date_birth", "Date of Birth is required");
+            isValid = false;
+        } else if (!isValidDate(month, day, year)) {
+            showError("c_date_birth", "Invalid Date of Birth");
+            isValid = false;
+        } else if (!isAtLeast15YearsOld(year, month, day)) {
+            showError("c_date_birth", "You must be at least 16 years old");
+            isValid = false;
+        }
+
+        // Validate password
+        const password = document.getElementById("passwords").value.trim();
+        if (password === "") {
+            showError("password", "Password is required");
+            isValid = false;
+        }
+
+        // Validate confirm password
+        const confirmPassword = document.getElementById("confirmpassword").value.trim();
+        if (confirmPassword !== password) {
+            showError("confirmpassword", "Passwords do not match");
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    function showError(inputId, errorMessage) {
+        const inputElement = document.getElementById(inputId);
+        const errorElement = document.getElementById(inputId + "_error");
+
+        if (inputElement) {
+            inputElement.classList.add("input-error");
+        }
+
+        if (errorElement) {
+            errorElement.textContent = errorMessage;
         }
     }
 
-    // Clear previous error messages and styles
-    document.querySelectorAll('.error').forEach(e => e.innerHTML = '');
-    document.querySelectorAll('.form-control').forEach(e => e.classList.remove('error'));
+    function clearErrors() {
+        const errorElements = document.querySelectorAll(".error");
+        errorElements.forEach((element) => {
+            element.textContent = "";
+        });
 
-    // Validate fields
-    validateField('firstname', 'firstnameError', 'Firstname is required');
-    validateField('lastname', 'lastnameError', 'Lastname is required');
-    validateField('address', 'addressError', 'Address is required');
-    validateField('religion', 'religionError', 'Religion is required');
-    validateField('pbirth', 'pbirthError', 'Place of Birth is required');
-    validateField('father_name', 'fatherNameError', 'Father\'s Fullname is required');
-    validateField('mother_name', 'motherNameError', 'Mother\'s Fullname is required');
-    validateField('parents_residence', 'parentsResidenceError', 'Parents Residence is required');
-    validateField('godparents', 'godparentsError', 'List Of Godparents is required');
-    validateField('date', 'dateError', 'Date is required');
-    validateField('start_time', 'startTimeError', 'Start Time is required');
-    validateField('end_time', 'endTimeError', 'End Time is required');
-
-    // Validate gender
-    const gender = document.querySelector('input[name="gender"]:checked');
-    if (!gender) {
-        document.getElementById('genderError').innerText = 'Gender is required';
-        document.querySelector('input[name="gender"]').classList.add('error');
-        isValid = false;
-    } else {
-        document.getElementById('genderError').innerText = '';
-        document.querySelector('input[name="gender"]').classList.remove('error');
+        const inputElements = document.querySelectorAll(".form-control");
+        inputElements.forEach((element) => {
+            element.classList.remove("input-error");
+        });
     }
 
-    // Validate date of birth
-    const month = document.getElementById('months').value;
-    const day = document.getElementById('days').value;
-    const year = document.getElementById('years').value;
-    if (month === '' || day === '' || year === '') {
-        document.getElementById('dobError').innerText = 'Date of birth is required';
-        isValid = false;
-    } else {
-        document.getElementById('dobError').innerText = '';
-    }
-    const seminar = document.getElementById('sundays').value;
-    if (seminar === '') {
-        document.getElementById('seminarError').innerText = 'Please select a seminar';
-        document.getElementById('sundays').classList.add('error');
-        isValid = false;
-    } else {
-        document.getElementById('seminarError').innerText = '';
-        document.getElementById('sundays').classList.remove('error');
-    }
-    const priest = document.getElementById('eventType').value;
- 
+    function isValidDate(month, day, year) {
+        // Convert values to integers
+        const monthInt = parseInt(month, 10);
+        const dayInt = parseInt(day, 10);
+        const yearInt = parseInt(year, 10);
 
-    
- const payAmount = document.getElementById('pay_amount').value;
-    if (payAmount === '' || isNaN(payAmount) || payAmount <= 0) {
-        document.getElementById('payAmountError').innerText = 'Please enter a valid payable amount';
-        document.getElementById('pay_amount').classList.add('error');
-        isValid = false;
-    } else {
-        document.getElementById('payAmountError').innerText = '';
-        document.getElementById('pay_amount').classList.remove('error');
-    }
-    // Check if the form is valid
-    if (!isValid) {
-        console.log('Validation failed, form not submitted.');
-        return false;  // Prevent form submission
+        // Check if the date is valid
+        if (monthInt < 1 || monthInt > 12) {
+            return false;
+        }
+
+        const daysInMonth = new Date(yearInt, monthInt, 0).getDate();
+        return dayInt > 0 && dayInt <= daysInMonth;
     }
 
-    console.log('Validation passed, form will be submitted.');
-    return true;  // Allow form submission
-}
+    function isAtLeast15YearsOld(year, month, day) {
+        const today = new Date();
+        const birthDate = new Date(year, month - 1, day); // JavaScript months are 0-based
+        const age = today.getFullYear() - birthDate.getFullYear();
+
+        if (today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day)) {
+            return age - 1 >= 15;
+        }
+
+        return age >= 16;
+    }
 
 </script>
 

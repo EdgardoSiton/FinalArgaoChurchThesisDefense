@@ -23,6 +23,7 @@ if (isset($_GET['id'])) {
         }
     }
 }
+$declineReason = isset($pendingItem['reason']) ? ($pendingItem['reason']) : '';
 $event_name = isset($pendingItem['event_name']) ? ($pendingItem['event_name']) : '';
 $Priest = isset($pendingItem['Priest']) ? ($pendingItem['Priest']) : '';
 $Pending = isset($pendingItem['priest_status']) ? ($pendingItem['priest_status']) : '';

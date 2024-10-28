@@ -2,10 +2,32 @@
 session_start();
 require_once '../../Model/staff_mod.php';  // Your Staff class file
 require_once '../../Model/db_connection.php';  // Your DB connection
-
+$email = $_SESSION['email'];
+$nme = $_SESSION['fullname'];
 // Initialize the Staff class with the database connection
 $userManager = new Staff($conn);
 $baptismReport = $userManager->generateWeddingReport();  // Call the method
+
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Citizen") {
+  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -97,12 +119,14 @@ $baptismReport = $userManager->generateWeddingReport();  // Call the method
 
     <h2 style="text-align: center;">Wedding Seminar Report</h2>
 
+
     <!-- Print Button -->
     <button class="button" onclick="printReport()">Print Report</button>
 
     <table class="table table-bordered">
         <thead>
             <tr>
+            <th>Speaker</th>
                 <th>Seminar Date</th>
                 <th>Reference Number</th>
                 <th>Type</th>
@@ -114,6 +138,7 @@ $baptismReport = $userManager->generateWeddingReport();  // Call the method
         <tbody>
             <?php if (!empty($baptismReport)): ?>
                 <tr>
+                <td><?= htmlspecialchars($baptismReport['Speaker']) ?></td>
                     <td><?= htmlspecialchars($baptismReport['appointment_schedule_date']) ?></td>
                     <td><?= htmlspecialchars($baptismReport['ref_number']) ?></td>
                     <td><?= htmlspecialchars($baptismReport['type']) ?></td>

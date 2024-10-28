@@ -21,7 +21,7 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 class IsTrueValidator extends ConstraintValidator
 {
     /**
-     * @return void
+     * {@inheritdoc}
      */
     public function validate(mixed $value, Constraint $constraint)
     {
@@ -29,13 +29,15 @@ class IsTrueValidator extends ConstraintValidator
             throw new UnexpectedTypeException($constraint, IsTrue::class);
         }
 
-        if (null === $value || true === $value || 1 === $value || '1' === $value) {
+        if (null === $value) {
             return;
         }
 
-        $this->context->buildViolation($constraint->message)
-            ->setParameter('{{ value }}', $this->formatValue($value))
-            ->setCode(IsTrue::NOT_TRUE_ERROR)
-            ->addViolation();
+        if (true !== $value && 1 !== $value && '1' !== $value) {
+            $this->context->buildViolation($constraint->message)
+                ->setParameter('{{ value }}', $this->formatValue($value))
+                ->setCode(IsTrue::NOT_TRUE_ERROR)
+                ->addViolation();
+        }
     }
 }

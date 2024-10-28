@@ -6,10 +6,9 @@ session_start();
 
 $loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
 if (!$loggedInUserEmail) {
-    header("Location: login.php");
+    header("Location: ../../index.php");
     exit();
-}
-
+  }
 $citizenModel = new Citizen($conn); 
 $staffModel = new Staff($conn); // Instantiate Staff model
 $userDetails = $citizenModel->getFetchDetails($loggedInUserEmail);
@@ -970,9 +969,10 @@ if ($scheduleId) {
 
        
         $payableAmount = $_POST['pay_amount'] ?? null;
+        $eventspeaker = $_POST['eventspeaker'] ?? null;
 
         // Validate required form data
-        if (!$sunday || !$start_time || !$end_time || !$payableAmount || !$priestId) {
+        if (!$sunday || !$start_time || !$end_time || !$payableAmount || !$priestId || !$eventspeaker) {
             die('Error: Missing required form data.');
         }
 
@@ -982,7 +982,7 @@ if ($scheduleId) {
 
         if ($seminarScheduleId) {
             // Insert into appointment using $walkinbaptism_id instead of $baptismfill_id
-            $appointmentResult = $citizenModel->insertAppointment($baptismfillId, $payableAmount, $seminarScheduleId);
+            $appointmentResult = $citizenModel->insertAppointment($baptismfillId, $payableAmount,$eventspeaker, $seminarScheduleId);
 
        
 
@@ -1171,7 +1171,7 @@ if ($scheduleId) {
     
           
             $payableAmount = $_POST['pay_amount'] ?? null;
-    
+            $eventspeaker = $_POST['eventspeaker'] ?? null;
             // Validate required form data
             if (!$sunday || !$start_time || !$end_time || !$payableAmount ) {
                 die('Error: Missing required form data.');
@@ -1183,7 +1183,7 @@ if ($scheduleId) {
     
             if ($scheduleId) {
                 // Insert into appointment using $walkinbaptism_id instead of $baptismfill_id
-                $appointmentResult = $citizenModel->insertwAppointment($weddingffill_id, $payableAmount,$scheduleId);
+                $appointmentResult = $citizenModel->insertwAppointment($weddingffill_id, $payableAmount,$eventspeaker,$scheduleId);
     
               
                 
@@ -1226,8 +1226,8 @@ if ($scheduleId) {
     $selectrequest = $_POST['selectrequest'] ?? '';
     $role = 'Online';
     $event_location = 'Outside';
-    $priestId = null ;
-    $status = null;
+
+   
     $fullname = trim($firstname . ' ' . $middlename . ' ' . $lastname);
     $fullnames = trim($firstnames . ' ' . $middlenames . ' ' . $lastnames);
     $startTime = convertTo24HourFormat($startTime);
@@ -1236,7 +1236,7 @@ if ($scheduleId) {
   
     
     $citizenModel->insertRequestFormFill(
-        $scheduleId , $priestId,$status,$selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location
+        $scheduleId ,$selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location
     );
 
     $_SESSION['status'] = "success";
@@ -1264,8 +1264,8 @@ else if ($requestform_ids) {
     $selectrequest = $_POST['selectrequest'] ?? '';
     $role = 'Online';
     $event_location = 'Inside';
-    $priestId = null ;
-    $status = null;
+
+   
     $fullname = trim($firstname . ' ' . $middlename . ' ' . $lastname);
     $fullnames = trim($firstnames . ' ' . $middlenames . ' ' . $lastnames);
     $startTime = convertTo24HourFormat($startTime);
@@ -1274,7 +1274,7 @@ else if ($requestform_ids) {
   
     
     $citizenModel->insertRequestFormFill(
-        $scheduleId , $priestId,$status,$selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location
+        $scheduleId ,$selectrequest, $fullname, $datetofollowup, $address, $cpnumber, $fullnames, $chapel,$role,$event_location
     );
 
     $_SESSION['status'] = "success";

@@ -37,20 +37,20 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 class ExecutionContext implements ExecutionContextInterface
 {
-    private ValidatorInterface $validator;
+    private $validator;
 
     /**
      * The root value of the validated object graph.
      */
     private mixed $root;
 
-    private TranslatorInterface $translator;
+    private $translator;
     private ?string $translationDomain;
 
     /**
      * The violations generated in the current context.
      */
-    private ConstraintViolationList $violations;
+    private $violations;
 
     /**
      * The currently validated value.
@@ -70,7 +70,7 @@ class ExecutionContext implements ExecutionContextInterface
     /**
      * The current validation metadata.
      */
-    private ?MetadataInterface $metadata = null;
+    private $metadata = null;
 
     /**
      * The currently validated group.
@@ -80,7 +80,7 @@ class ExecutionContext implements ExecutionContextInterface
     /**
      * The currently validated constraint.
      */
-    private ?Constraint $constraint = null;
+    private $constraint = null;
 
     /**
      * Stores which objects have been validated in which group.
@@ -111,7 +111,7 @@ class ExecutionContext implements ExecutionContextInterface
     /**
      * @internal Called by {@link ExecutionContextFactory}. Should not be used in user code.
      */
-    public function __construct(ValidatorInterface $validator, mixed $root, TranslatorInterface $translator, ?string $translationDomain = null)
+    public function __construct(ValidatorInterface $validator, mixed $root, TranslatorInterface $translator, string $translationDomain = null)
     {
         $this->validator = $validator;
         $this->root = $root;
@@ -121,7 +121,10 @@ class ExecutionContext implements ExecutionContextInterface
         $this->cachedObjectsRefs = new \SplObjectStorage();
     }
 
-    public function setNode(mixed $value, ?object $object, ?MetadataInterface $metadata, string $propertyPath): void
+    /**
+     * {@inheritdoc}
+     */
+    public function setNode(mixed $value, ?object $object, MetadataInterface $metadata = null, string $propertyPath)
     {
         $this->value = $value;
         $this->object = $object;
@@ -129,17 +132,26 @@ class ExecutionContext implements ExecutionContextInterface
         $this->propertyPath = $propertyPath;
     }
 
-    public function setGroup(?string $group): void
+    /**
+     * {@inheritdoc}
+     */
+    public function setGroup(?string $group)
     {
         $this->group = $group;
     }
 
-    public function setConstraint(Constraint $constraint): void
+    /**
+     * {@inheritdoc}
+     */
+    public function setConstraint(Constraint $constraint)
     {
         $this->constraint = $constraint;
     }
 
-    public function addViolation(string|\Stringable $message, array $parameters = []): void
+    /**
+     * {@inheritdoc}
+     */
+    public function addViolation(string $message, array $parameters = [])
     {
         $this->violations->add(new ConstraintViolation(
             $this->translator->trans($message, $parameters, $this->translationDomain),
@@ -154,7 +166,10 @@ class ExecutionContext implements ExecutionContextInterface
         ));
     }
 
-    public function buildViolation(string|\Stringable $message, array $parameters = []): ConstraintViolationBuilderInterface
+    /**
+     * {@inheritdoc}
+     */
+    public function buildViolation(string $message, array $parameters = []): ConstraintViolationBuilderInterface
     {
         return new ConstraintViolationBuilder(
             $this->violations,
@@ -169,21 +184,33 @@ class ExecutionContext implements ExecutionContextInterface
         );
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getViolations(): ConstraintViolationListInterface
     {
         return $this->violations;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getValidator(): ValidatorInterface
     {
         return $this->validator;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getRoot(): mixed
     {
         return $this->root;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getValue(): mixed
     {
         if ($this->value instanceof LazyProperty) {
@@ -193,16 +220,25 @@ class ExecutionContext implements ExecutionContextInterface
         return $this->value;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getObject(): ?object
     {
         return $this->object;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getMetadata(): ?MetadataInterface
     {
         return $this->metadata;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getGroup(): ?string
     {
         return $this->group;
@@ -213,22 +249,34 @@ class ExecutionContext implements ExecutionContextInterface
         return $this->constraint;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getClassName(): ?string
     {
         return $this->metadata instanceof MemberMetadata || $this->metadata instanceof ClassMetadataInterface ? $this->metadata->getClassName() : null;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getPropertyName(): ?string
     {
         return $this->metadata instanceof PropertyMetadataInterface ? $this->metadata->getPropertyName() : null;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getPropertyPath(string $subPath = ''): string
     {
         return PropertyPath::append($this->propertyPath, $subPath);
     }
 
-    public function markGroupAsValidated(string $cacheKey, string $groupHash): void
+    /**
+     * {@inheritdoc}
+     */
+    public function markGroupAsValidated(string $cacheKey, string $groupHash)
     {
         if (!isset($this->validatedObjects[$cacheKey])) {
             $this->validatedObjects[$cacheKey] = [];
@@ -237,26 +285,41 @@ class ExecutionContext implements ExecutionContextInterface
         $this->validatedObjects[$cacheKey][$groupHash] = true;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function isGroupValidated(string $cacheKey, string $groupHash): bool
     {
         return isset($this->validatedObjects[$cacheKey][$groupHash]);
     }
 
-    public function markConstraintAsValidated(string $cacheKey, string $constraintHash): void
+    /**
+     * {@inheritdoc}
+     */
+    public function markConstraintAsValidated(string $cacheKey, string $constraintHash)
     {
         $this->validatedConstraints[$cacheKey.':'.$constraintHash] = true;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function isConstraintValidated(string $cacheKey, string $constraintHash): bool
     {
         return isset($this->validatedConstraints[$cacheKey.':'.$constraintHash]);
     }
 
-    public function markObjectAsInitialized(string $cacheKey): void
+    /**
+     * {@inheritdoc}
+     */
+    public function markObjectAsInitialized(string $cacheKey)
     {
         $this->initializedObjects[$cacheKey] = true;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function isObjectInitialized(string $cacheKey): bool
     {
         return isset($this->initializedObjects[$cacheKey]);

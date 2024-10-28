@@ -10,6 +10,29 @@ $nme = $_SESSION['fullname'];
 $staff = new Staff($conn);
 // Get the baptismfill_id from the URL
 $appointment_id = isset($_GET['appsched_id']) ? intval($_GET['appsched_id']) : null;
+$loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
+
+if (!$loggedInUserEmail) {
+  header("Location: ../../index.php");
+  exit();
+}
+
+// Redirect staff users to the staff page, not the citizen page
+if ($r_status === "Staff") {
+  header("Location: ../PageStaff/StaffDashboard.php"); // Change to your staff page
+  exit();
+}
+if ($r_status === "Admin") {
+    header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  exit();
+}if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); // Change to your staff page
+  exit();
+}
+
+
+
 $step = 1;
 ?>
 
@@ -119,8 +142,6 @@ small {
     </div>
     <!-- Navbar & Hero End -->
     
-
-  <?php require_once 'sidebar.php'?>
   <div class="container">
   <div class="page-inner">
         <div class="row">
@@ -149,7 +170,7 @@ small {
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">Confirmation View Information Form</div>
+                        <div class="card-title"><?php echo $pendingItem['event_name'] ?? ''; ?> View Information Form</div>
                     </div>
                     <div class="card-body">
     <input type="hidden" name="form_type" value="confirmation">

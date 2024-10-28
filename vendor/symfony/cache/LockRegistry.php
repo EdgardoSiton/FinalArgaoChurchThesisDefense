@@ -26,15 +26,15 @@ use Symfony\Contracts\Cache\ItemInterface;
  */
 final class LockRegistry
 {
-    private static array $openedFiles = [];
-    private static ?array $lockedFiles = null;
-    private static \Exception $signalingException;
-    private static \Closure $signalingCallback;
+    private static $openedFiles = [];
+    private static $lockedFiles;
+    private static $signalingException;
+    private static $signalingCallback;
 
     /**
      * The number of items in this list controls the max number of concurrent processes.
      */
-    private static array $files = [
+    private static $files = [
         __DIR__.\DIRECTORY_SEPARATOR.'Adapter'.\DIRECTORY_SEPARATOR.'AbstractAdapter.php',
         __DIR__.\DIRECTORY_SEPARATOR.'Adapter'.\DIRECTORY_SEPARATOR.'AbstractTagAwareAdapter.php',
         __DIR__.\DIRECTORY_SEPARATOR.'Adapter'.\DIRECTORY_SEPARATOR.'AdapterInterface.php',
@@ -83,7 +83,7 @@ final class LockRegistry
         return $previousFiles;
     }
 
-    public static function compute(callable $callback, ItemInterface $item, bool &$save, CacheInterface $pool, ?\Closure $setMetadata = null, ?LoggerInterface $logger = null): mixed
+    public static function compute(callable $callback, ItemInterface $item, bool &$save, CacheInterface $pool, \Closure $setMetadata = null, LoggerInterface $logger = null)
     {
         if ('\\' === \DIRECTORY_SEPARATOR && null === self::$lockedFiles) {
             // disable locking on Windows by default
@@ -97,15 +97,16 @@ final class LockRegistry
         }
 
         self::$signalingException ??= unserialize("O:9:\"Exception\":1:{s:16:\"\0Exception\0trace\";a:0:{}}");
-        self::$signalingCallback ??= fn () => throw self::$signalingException;
+        self::$signalingCallback ??= function () { throw self::$signalingException; };
 
         while (true) {
             try {
+                $locked = false;
                 // race to get the lock in non-blocking mode
                 $locked = flock($lock, \LOCK_EX | \LOCK_NB, $wouldBlock);
 
                 if ($locked || !$wouldBlock) {
-                    $logger?->info(sprintf('Lock %s, now computing item "{key}"', $locked ? 'acquired' : 'not supported'), ['key' => $item->getKey()]);
+                    $logger && $logger->info(sprintf('Lock %s, now computing item "{key}"', $locked ? 'acquired' : 'not supported'), ['key' => $item->getKey()]);
                     self::$lockedFiles[$key] = true;
 
                     $value = $callback($item, $save);
@@ -122,7 +123,7 @@ final class LockRegistry
                     return $value;
                 }
                 // if we failed the race, retry locking in blocking mode to wait for the winner
-                $logger?->info('Item "{key}" is locked, waiting for it to be released', ['key' => $item->getKey()]);
+                $logger && $logger->info('Item "{key}" is locked, waiting for it to be released', ['key' => $item->getKey()]);
                 flock($lock, \LOCK_SH);
             } finally {
                 flock($lock, \LOCK_UN);
@@ -131,7 +132,7 @@ final class LockRegistry
 
             try {
                 $value = $pool->get($item->getKey(), self::$signalingCallback, 0);
-                $logger?->info('Item "{key}" retrieved after lock was released', ['key' => $item->getKey()]);
+                $logger && $logger->info('Item "{key}" retrieved after lock was released', ['key' => $item->getKey()]);
                 $save = false;
 
                 return $value;
@@ -139,22 +140,19 @@ final class LockRegistry
                 if (self::$signalingException !== $e) {
                     throw $e;
                 }
-                $logger?->info('Item "{key}" not found while lock was released, now retrying', ['key' => $item->getKey()]);
+                $logger && $logger->info('Item "{key}" not found while lock was released, now retrying', ['key' => $item->getKey()]);
             }
         }
 
         return null;
     }
 
-    /**
-     * @return resource|false
-     */
     private static function open(int $key)
     {
         if (null !== $h = self::$openedFiles[$key] ?? null) {
             return $h;
         }
-        set_error_handler(static fn () => null);
+        set_error_handler(function () {});
         try {
             $h = fopen(self::$files[$key], 'r+');
         } finally {

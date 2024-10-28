@@ -1,10 +1,8 @@
 <?php
-
-
-
 require_once '../Model/db_connection.php';
 require_once '../Model/staff_mod.php';
 require_once __DIR__ . '/../Model/citizen_mod.php';
+require_once __DIR__ . '/../Model/login_mod.php';
 
 $staff = new Staff($conn);
 $Citizen = new Citizen($conn);
@@ -27,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $cpriest_id = isset($_POST['cpriest_id']) ? $_POST['cpriest_id'] : null;
     $requestform_ids = isset($_POST['request_ids']) ? $_POST['request_ids'] : null;
 
+
     if ($baptismfill_id) {
         $decline = $staff->deleteBaptism($baptismfill_id);
         echo $decline; // Output the result for client-side handling
@@ -46,8 +45,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $declines = $staff->deleteMassWedding($massweddingffill_id);
         echo $declines;
     }else if($baptismfillId){
-        $decline = $staff->approveBaptism($baptismfillId);
-        echo $decline;
+        $approve = $staff->approveBaptism($baptismfillId);  // Call the method to approve the request
+
+    if ($approve) {
+        // Approval successful
+        $_SESSION['status'] = 'success';  // Set session to indicate success
+        echo 'success';  // Send success response back to AJAX
+    } else {
+        // Approval failed
+        echo 'error';  // Send error response back to AJAX
+    }
     }else if ($confirmationfill_ids){
         $decline = $staff-> approveConfirmation($confirmationfill_ids);
         echo $decline;
