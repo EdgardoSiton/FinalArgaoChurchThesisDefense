@@ -1,7 +1,7 @@
 <?php
 session_start(); // Start the session
 
-require_once __DIR__ . '/../vendor/autoload.php'; // Adjust the path if necessary
+
 
 function getGoogleClient() {
     $client = new Google_Client();

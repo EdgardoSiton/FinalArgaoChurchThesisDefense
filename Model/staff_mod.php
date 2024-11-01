@@ -4,7 +4,7 @@ use PHPMailer\PHPMailer\Exception;
 require_once __DIR__ . '/../Controller/phpmailer/src/PHPMailer.php'; // Ensure this uses require_once
 require_once __DIR__ . '/../Controller/phpmailer/src/SMTP.php';
 require_once __DIR__ . '/../Controller/phpmailer/src/Exception.php';
-require_once  __DIR__ . '/../vendor/autoload.php';
+
 class Staff {
     private $conn;
     private $regId;
