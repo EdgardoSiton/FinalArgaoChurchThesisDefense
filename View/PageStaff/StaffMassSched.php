@@ -172,6 +172,7 @@ if ($r_status === "Admin") {
     <script src="../assets/js/core/jquery-3.7.1.min.js"></script>
     <script src="../assets/js/core/popper.min.js"></script>
     <script src="../assets/js/core/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- jQuery Scrollbar -->
     <script src="../assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>
@@ -182,6 +183,28 @@ if ($r_status === "Admin") {
     <!-- Kaiadmin DEMO methods, don't include it in your project! -->
     <script src="../assets/js/setting-demo2.js"></script>
     <script>
+      
+      document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'success') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Form submitted successfully!',
+            text: 'Has Been Successful.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
       $(document).ready(function () {
         $("#basic-datatables").DataTable({});
 

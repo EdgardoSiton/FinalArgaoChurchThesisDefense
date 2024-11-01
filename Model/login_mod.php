@@ -114,41 +114,49 @@ class User {
         return $data;
     }
     
-    public function getAccount() {
-        // Prepare the SQL query with ORDER BY clause for descending order
+    public function getAccount($statusFilter = '') {
+        // Base SQL query for Citizen accounts
         $sql = "SELECT `citizend_id`, `fullname`, `email`, `gender`, `phone`, `c_date_birth`, `age`, `address`, `valid_id`, `user_type`, `r_status`, `c_current_time`
                 FROM `citizen` 
-                WHERE `user_type` = 'Citizen' 
-                AND `r_status` = 'Pending'
-                ORDER BY `c_current_time` ASC";
-    
+                WHERE `user_type` = 'Citizen'";
+        
+        // Apply dynamic filter based on the provided status
+        if ($statusFilter === 'Approved') {
+            $sql .= " AND `r_status` = 'Approved'";
+        } else {
+            $sql .= " AND `r_status` = 'Pending'";
+        }
+        
+        $sql .= " ORDER BY `c_current_time` ASC";
+        
         // Prepare the statement
         $stmt = $this->conn->prepare($sql);
-    
+        
         if (!$stmt) {
             die('Prepare failed: ' . $this->conn->error);
         }
-    
+        
         // Execute the statement
         if (!$stmt->execute()) {
             die('Execute failed: ' . $stmt->error);
         }
-    
+        
         // Get the result set
         $result = $stmt->get_result();
-    
+        
         // Fetch all results as an associative array
         $data = [];
         while ($row = $result->fetch_assoc()) {
             $data[] = $row;
         }
-    
+        
         // Close the statement
         $stmt->close();
-    
+        
         // Return the result
         return $data;
     }
+    
     public function getCitizenDetails($citizendId) {
         // Prepare the SQL query
         $sql = "SELECT `citizend_id`, `fullname`, `email`, `gender`, `phone`, `c_date_birth`, `age`, `address`, `valid_id`, `user_type`, `r_status`, `c_current_time`
@@ -222,12 +230,9 @@ class User {
             $mail->Password = "xomoabhlnrlzenur";
             $mail->SMTPSecure = 'tls';
             $mail->Port = 587;
-
-    
+           
             $mail->setFrom('argaoparishchurch@gmail.com');
             $mail->addAddress($email);
-            $mail->addEmbeddedImage('../Controller/signature.png', 'signature_img');
-            $mail->addEmbeddedImage('../Controller/logo.jpg', 'background_img');
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body = "<div style='width: 100%; max-width: 400px; margin: auto; background: url(cid:background_img) no-repeat center center; background-size: cover; padding: 20px;'>
@@ -241,7 +246,7 @@ class User {
                 error_log("Email failed: " . $mail->ErrorInfo); // Log error
                 echo "Error sending email notification: " . $mail->ErrorInfo;
             } else {
-                echo "Email notification sent successfully.";
+              
             }
         } catch (Exception $e) {
             error_log("Error sending email notification: " . $e->getMessage()); // Log error
@@ -318,10 +323,10 @@ class User {
     
         if ($result === false) {
             error_log("Database query error: " . mysqli_error($this->conn));
-            return 'An error occurred. Please try again later.';
+            return false;
         }
     
-        if (mysqli_num_rows($result) > 0) {
+        if ($result->num_rows > 0) {
             // User found, verify password
             $user = $result->fetch_assoc();
             $hashedPassword = $user['password'];
@@ -337,28 +342,20 @@ class User {
     
                     if ($updateResult === false) {
                         error_log("Failed to update password hash: " . mysqli_error($this->conn));
-                        return 'An error occurred. Please try again later.';
                     }
                 }
-    
-                // Password is correct, return true
-                return true;
+                return true; // Password is correct
             } else {
-                // Password is incorrect
-                error_log("Incorrect password for email: $email");
-                return 'Incorrect credentials. Please try again.';
+                return false; // Password is incorrect
             }
         } else {
-            // Email not found
-            error_log("Email not found: $email");
-            return 'Incorrect credentials. Please try again.';
+            return false; // Email not found
         }
     }
 
-    
     public function getUserInfo($email) {
         $email = mysqli_real_escape_string($this->conn, $email);
-        $query = "SELECT citizend_id, user_type, r_status, fullname,gender FROM citizen WHERE email = '$email'";
+        $query = "SELECT citizend_id, user_type, r_status, fullname, gender FROM citizen WHERE email = '$email'";
         $result = mysqli_query($this->conn, $query);
         
         // Check if query was successful and fetch user info
@@ -375,6 +372,106 @@ class User {
             return null;
         }
     }
+    public function deleteAccount($email) {
+        $query = "DELETE FROM citizen WHERE email = ?";
+        $stmt = $this->conn->prepare($query);
+
+        if ($stmt) {
+            $stmt->bind_param('s', $email);
+            $stmt->execute();
+            $stmt->close();
+            return true; // Indicate success
+        } else {
+            // Optionally handle errors
+            return false; // Indicate failure
+        }
+    }
+    private function generateOTP($length = 6) {
+        return random_int(100000, 999999); // Generates a random 6-digit number
+    }
+    
+    public function sendOTP($email, $otp) {
+        $subject = "Your OTP Code";
+        $body = "<p>Your OTP code is: <strong>$otp</strong>. It is valid for 5 minutes.</p>";
+        
+        // Call the sendEmail function to send the OTP
+        return $this->sendEmail($email, "Citizen", $subject, $body);
+    }
+    public function regenerateAndSendOTP() {
+        // Generate a new OTP
+        $newOtp = $this->regenerateOTP(); // This method updates the session and sends the OTP
+        return $newOtp;
+    }
+    
+    
+    public function regenerateOTP() {
+        // Generate a new OTP
+        $newOtp = $this->generateOTP();
+        
+        // Update session with new OTP and reset the expiration time
+        $_SESSION['otp_code'] = $newOtp;
+        $_SESSION['c_current_time'] = time() + 300; // Set new expiration time for 5 minutes
+        
+        // Send the new OTP to the user's email
+        $this->sendOTP($_SESSION['user_email'], $newOtp);
+        
+        // Update the OTP and current time in the database
+        $query = "UPDATE citizen SET otp_code = ?, c_current_time = ? WHERE email = ?";
+        $stmt = $this->conn->prepare($query);
+        $currentTime = date("Y-m-d H:i:s"); // Format current time for database storage
+        
+        if ($stmt) {
+            $stmt->bind_param('sss', $newOtp, $currentTime, $_SESSION['user_email']);
+            $stmt->execute();
+            $stmt->close();
+        } else {
+            // Optionally handle errors here
+            return "Error updating OTP in database: " . $this->conn->error;
+        }
+        
+        return $newOtp;
+    }
+    
+    
+    public function verifyOTP($inputOtp) {
+        // Check if the user reached this method from registration
+        if (!isset($_SESSION['otp_code']) || !isset($_SESSION['user_email'])) {
+            return "Invalid access. Please register first.";
+        }
+    
+        // Check if the expiry time is set in session
+        if (!isset($_SESSION['c_current_time'])) {
+            return "Session expired. Please register again.";
+        }
+    
+        // Verify the OTP
+        if (time() > $_SESSION['c_current_time']) {
+            return "OTP has expired. Please request a new one.";
+        } elseif ($inputOtp == $_SESSION['otp_code']) {
+            // OTP is valid, update r_status to "Pending"
+            $updateQuery = "UPDATE citizen SET r_status = 'Pending' WHERE email = ?";
+            $stmt = $this->conn->prepare($updateQuery);
+            if ($stmt === false) {
+                return "Failed to prepare statement: " . $this->conn->error;
+            }
+    
+            $stmt->bind_param('s', $_SESSION['user_email']);
+            if ($stmt->execute()) {
+                // Clean up
+                unset($_SESSION['otp_code']); // Clear OTP from session
+                unset($_SESSION['c_current_time']); // Clear expiry time
+                unset($_SESSION['user_email']); // Clear email if necessary
+    
+                // Optionally redirect to a success page
+                return "OTP verified successfully! Your account is now active.";
+            } else {
+                return "Error updating status: " . $stmt->error;
+            }
+        } else {
+            return "Invalid OTP. Please try again.";
+        }
+    }
+    
     
     public function registerUser($data) {
         // Automatically set user_type to 'Citizen'
@@ -385,7 +482,6 @@ class User {
     
         // Ensure c_date_birth is set correctly before proceeding
         if (isset($data['year']) && isset($data['month']) && isset($data['day'])) {
-            // Validate date components
             $year = intval($data['year']);
             $month = intval($data['month']);
             $day = intval($data['day']);
@@ -436,41 +532,53 @@ class User {
         // Hash the password
         $sanitizedData['password'] = password_hash($sanitizedData['password'], PASSWORD_DEFAULT);
     
+        // Get the current time
+        $currentTime = date("Y-m-d H:i:s");
+    
         // Prepare SQL query with placeholders
-        $query = "INSERT INTO citizen (user_type, fullname, address, gender, c_date_birth, age, email, valid_id, phone, password, r_status) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+// Prepare SQL query with placeholders
+$query = "INSERT INTO citizen (user_type, fullname, address, gender, c_date_birth, age, email, valid_id, phone, password, r_status, c_current_time, otp_code) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)";
+
+// Generate and send OTP
+$otp = $this->generateOTP();
+$this->sendOTP($sanitizedData['email'], $otp);
+
+// Use prepared statements to prevent SQL injection
+$stmt = $this->conn->prepare($query);
+$stmt->bind_param(
+    'ssssssssssss', // Change this to match the number of columns
+    $sanitizedData['user_type'],
+    $sanitizedData['fullname'],
+    $sanitizedData['address'],
+    $sanitizedData['gender'],
+    $sanitizedData['c_date_birth'],
+    $sanitizedData['age'],
+    $sanitizedData['email'],
+    $sanitizedData['valid_id'],
+    $sanitizedData['phone'],
+    $sanitizedData['password'],
+    $currentTime,  // Store current time here
+    $otp            // Bind OTP here
+);
+
     
-        // Use prepared statements to prevent SQL injection
-        $stmt = $this->conn->prepare($query);
-        $stmt->bind_param(
-            'ssssssssss',
-            $sanitizedData['user_type'],
-            $sanitizedData['fullname'],
-            $sanitizedData['address'],
-            $sanitizedData['gender'],
-            $sanitizedData['c_date_birth'],
-            $sanitizedData['age'],
-            $sanitizedData['email'],
-            $sanitizedData['valid_id'],
-            $sanitizedData['phone'],
-            $sanitizedData['password']
-        );
-    
-        if ($stmt->execute()) {
-            // Insert notification record
-            $notificationQuery = "INSERT INTO notifications (type, message) VALUES ('user_registration', ?)";
-            $notificationStmt = $this->conn->prepare($notificationQuery);
-            $notificationStmt->bind_param('s', $sanitizedData['fullname']);
-    
-            if ($notificationStmt->execute()) {
-                return "Registration successful and notification sent";
-            } else {
-                return "Registration successful, but failed to send notification";
-            }
-        } else {
-            return "Registration failed";
-        }
+     // Execute the prepared statement
+if ($stmt->execute()) {
+    // On successful registration, set session variables
+    session_start(); // Make sure the session is started
+    $_SESSION['otp_code'] = $otp; // Store the generated OTP in session
+    $_SESSION['user_email'] = $sanitizedData['email']; // Store the user email in session
+    $_SESSION['c_current_time'] = time() + 300; // Set expiry time for OTP (5 minutes)
+
+    // Optionally, you could redirect or return a success message
+    return "Registration successful. An OTP has been sent to your email.";
+} else {
+    return "Error during registration: " . $stmt->error;
+}
+
     }
+    
     
     public function registerUsers($data) {
         // Automatically set user_type to 'Priest'
@@ -480,16 +588,12 @@ class User {
         // Combine first name, last name, and middle name into a single fullname field
         $data['fullname'] = trim($data['first_name'] . ' ' . $data['middle_name'] . ' ' . $data['last_name']);
     
-      
-            $year = intval($data['year']);
-            $month = intval($data['month']);
-            $day = intval($data['day']);
-            
-         
-                $data['c_date_birth'] = "$year-$month-$day";
-         
-               
-       
+        // Create date of birth from year, month, and day
+        $year = intval($data['year']);
+        $month = intval($data['month']);
+        $day = intval($data['day']);
+        
+        $data['c_date_birth'] = "$year-$month-$day";
     
         // Sanitize input data
         $sanitizedData = $this->sanitizeData($data);
@@ -501,8 +605,8 @@ class User {
         $sanitizedData['password'] = password_hash($sanitizedData['password'], PASSWORD_DEFAULT);
     
         // Prepare SQL query with placeholders
-        $query = "INSERT INTO citizen (user_type,r_status, fullname, address, gender, c_date_birth, age, email, phone, password) 
-                  VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, ?)";
+        $query = "INSERT INTO citizen (user_type, r_status, fullname, address, gender, c_date_birth, age, email, phone, password) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
         // Use prepared statements to prevent SQL injection
         $stmt = $this->conn->prepare($query);
@@ -521,39 +625,27 @@ class User {
         );
     
         if ($stmt->execute()) {
-            // Insert notification record
-            $notificationQuery = "INSERT INTO notifications (type, message) VALUES ('user_registration', ?)";
-            $notificationStmt = $this->conn->prepare($notificationQuery);
-            $notificationStmt->bind_param('s', $sanitizedData['fullname']);
-    
-            if ($notificationStmt->execute()) {
-                return "Registration successful and notification sent";
-            } else {
-                return "Registration successful, but failed to send notification";
-            }
+            // Return success message without notification
+            return "Registration successful";
         } else {
             return "Registration failed";
         }
     }
  
     public function registerUserss($data) {
-        // Automatically set user_type to 'Priest'
+        // Automatically set user_type to 'Staff'
         $data['user_type'] = 'Staff';
         $data['r_status'] = 'Active';
     
         // Combine first name, last name, and middle name into a single fullname field
         $data['fullname'] = trim($data['first_name'] . ' ' . $data['middle_name'] . ' ' . $data['last_name']);
     
-      
-            $year = intval($data['year']);
-            $month = intval($data['month']);
-            $day = intval($data['day']);
-            
-         
-                $data['c_date_birth'] = "$year-$month-$day";
-         
-               
-       
+        // Create date of birth from year, month, and day
+        $year = intval($data['year']);
+        $month = intval($data['month']);
+        $day = intval($data['day']);
+        
+        $data['c_date_birth'] = "$year-$month-$day";
     
         // Sanitize input data
         $sanitizedData = $this->sanitizeData($data);
@@ -565,8 +657,8 @@ class User {
         $sanitizedData['password'] = password_hash($sanitizedData['password'], PASSWORD_DEFAULT);
     
         // Prepare SQL query with placeholders
-        $query = "INSERT INTO citizen (user_type,r_status, fullname, address, gender, c_date_birth, age, email, phone, password) 
-                  VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, ?)";
+        $query = "INSERT INTO citizen (user_type, r_status, fullname, address, gender, c_date_birth, age, email, phone, password) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
         // Use prepared statements to prevent SQL injection
         $stmt = $this->conn->prepare($query);
@@ -585,20 +677,13 @@ class User {
         );
     
         if ($stmt->execute()) {
-            // Insert notification record
-            $notificationQuery = "INSERT INTO notifications (type, message) VALUES ('user_registration', ?)";
-            $notificationStmt = $this->conn->prepare($notificationQuery);
-            $notificationStmt->bind_param('s', $sanitizedData['fullname']);
-    
-            if ($notificationStmt->execute()) {
-                return "Registration successful and notification sent";
-            } else {
-                return "Registration successful, but failed to send notification";
-            }
+            // Return success message without notification
+            return "Registration successful";
         } else {
             return "Registration failed";
         }
     }
+    
     
     
     private function calculateAge($birthday) {

@@ -109,10 +109,6 @@ if ($r_status === "Admin") {
             <th>Seminar Date</th>
             <th>Seminar Time</th>
             <th>Schedule Type</th>
-            <th>Amount</th>
-      
-          
-            <th>View</th>
         </tr>
     </thead>
     <tbody>
@@ -143,7 +139,7 @@ if ($r_status === "Admin") {
                 <td><?= htmlspecialchars($seminarDate); ?></td>
                 <td><?= htmlspecialchars($seminarTime); ?></td>
                 <td><?= htmlspecialchars($appointment['roles']); ?></td>
-                <td><?= htmlspecialchars($appointment['payable_amount']); ?></td>
+
                 <td></td>
               
             </tr>

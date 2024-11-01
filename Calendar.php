@@ -34,6 +34,9 @@
 .pink {
   background: rgba(255, 192, 203, 1);
 }
+.purple {
+  background-color: grey;
+}
 </style>
 
 <div class="container">
@@ -49,6 +52,7 @@ try {
     
     // Attempt to fetch events
     $marriageEvents = $eventFetcher->fetchMarriageEvents();
+    $requestformEvents = $eventFetcher->fetchRequestFormEvents();
     $baptismEvents = $eventFetcher->fetchBaptismEvents();
     $confirmationEvents = $eventFetcher->fetchConfirmationEvents();
     $defuctomEvents = $eventFetcher->fetchDefuctomEvents();
@@ -110,7 +114,19 @@ foreach ($addcalendar as $event) {
     } 
 } 
 ?>
-
+  
+  <?php
+    foreach ($requestformEvents as $event) {
+    ?>
+    {
+        eventName: '<?php echo $event['Event_Name']; ?>',
+        startTime: '<?php echo convertTo12HourFormat($event['schedule_starttime']); ?>',
+        endTime: '<?php echo convertTo12HourFormat($event['schedule_endtime']); ?>',
+        calendar: 'RequestForm',
+        color: 'purple',
+        date: '<?php echo $event['schedule_date']; ?>'
+    },
+    <?php } ?>
     // Marriage Events
     <?php
     foreach ($marriageEvents as $event) {

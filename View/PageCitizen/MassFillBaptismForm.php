@@ -33,8 +33,10 @@ if ($r_status === "Admin") {
   exit();
 }
 
-
-
+$startTime = $announcementData['start_time'];
+$formattedTime = date("g:i A", strtotime($startTime));
+$endTime = $announcementData['end_time'];
+$formattedEndTime = date("g:i A", strtotime($endTime));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -259,7 +261,7 @@ document.getElementById('baptismForm').addEventListener('submit', function(event
         <div class="col-md-6 col-lg-4">
             <div class="form-group">
                 <label for="start_time">Start Time</label>
-                <input type="text" class="form-control" id="start_time" name="start_time"  value="<?php echo htmlspecialchars($announcementData['start_time']); ?>" readonly />
+                <input type="text" class="form-control" id="start_time" name="start_time" value="<?php echo htmlspecialchars($formattedTime); ?>" readonly />
                 <span class="error" id="startTimeError"></span>
             </div>
             <div class="form-group">
@@ -336,7 +338,7 @@ document.getElementById('baptismForm').addEventListener('submit', function(event
         <div class="col-md-6 col-lg-4">
             <div class="form-group">
                 <label for="end_time">End Time</label>
-                <input type="text" class="form-control" id="end_time" name="end_time" value="<?php echo htmlspecialchars($announcementData['end_time']); ?>"readonly />
+                <input type="text" class="form-control" id="end_time" name="end_time" value="<?php echo htmlspecialchars($formattedEndTime); ?>" readonly />
                 <span class="error" id="endTimeError"></span>
             </div>
             <div class="form-group">
@@ -365,59 +367,6 @@ document.getElementById('baptismForm').addEventListener('submit', function(event
 </div>
 <?php require_once 'footer.php'?>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    let formModified = false; 
-
-    const announcementIdInput = document.querySelector('input[name="announcement_id"]');
-    const announcementId = announcementIdInput ? announcementIdInput.value : null;
-
-    const form = document.querySelector('form'); // The form element
-
-    // Set formModified to true when any input in the form is changed
-    form.addEventListener('input', () => {
-        formModified = true;
-    });
-
-    // Before unload event to release capacity if form is modified but not submitted
-    window.addEventListener('beforeunload', function (e) {
-        if (formModified && announcementId) {
-            fetch('/../../Controller/release_capacity.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({
-                    announcement_id: announcementId
-                }),
-                keepalive: true
-            }).then(response => {
-                if (response.ok) {
-                    console.log('Capacity released successfully');
-                } else {
-                    console.log('Error releasing capacity');
-                }
-            }).catch(error => {
-                console.error('Error:', error);
-            });
-        }
-    });
-
-    // Handle tab or window visibility change
-    document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'hidden' && formModified && announcementId) {
-            fetch('/../../Controller/release_capacity.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({
-                    announcement_id: announcementId
-                }),
-                keepalive: true
-            });
-        }
-    });
-});
 
 
 

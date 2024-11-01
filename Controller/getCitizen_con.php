@@ -15,8 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['citizenId'])) {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'delete') {
+        $_SESSION['status'] = "success";
         $result = $user->deleteCitizen($citizenId); // Call delete method
     } else {
+        $_SESSION['status'] = "success";
         $result = $user->approveCitizen($citizenId); // Default to approve
     }
 

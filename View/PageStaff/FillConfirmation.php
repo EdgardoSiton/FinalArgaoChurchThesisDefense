@@ -204,6 +204,11 @@ small {
     .form-control.error {
         border: 1px solid red;
     }
+    .border-error {
+    border: 1px solid red !important; /* Adding !important for higher specificity */
+    border-radius: 1px; /* Optional: for rounded corners */
+}
+
 
     </style>
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -421,7 +426,7 @@ small {
             </option>
         <?php endforeach; ?>
     </select>
-    <span class="error" id="priestError"></span>
+    <span class="error" id="eventTypeError"></span>
 </div>
 
 
@@ -451,75 +456,74 @@ small {
 function validateForm() {
     var isValid = true;
 
-    // Clear previous errors
+    // Clear previous errors and reset border
     document.querySelectorAll('.error').forEach(el => el.innerText = '');
+    document.querySelectorAll('.form-control').forEach(el => el.classList.remove('error'));
 
     // Helper function to validate field
     function validateField(id, errorId, errorMessage) {
-        var value = document.getElementById(id).value.trim();
+        var field = document.getElementById(id);
+        var value = field.value.trim();
         if (value === '') {
             document.getElementById(errorId).innerText = errorMessage;
+            field.classList.add('error'); // Add error class to field
             isValid = false;
+        } else {
+            field.classList.remove('error'); // Remove error class if field is valid
         }
     }
 
-    // Validating all fields
+    // Validate text fields
+    validateField('pbirth', 'pbirthError', 'Name of Church is required.');
+    validateField('father_name', 'fatherNameError', 'Father\'s Fullname is required.');
+    validateField('mother_name', 'motherNameError', 'Mother\'s Fullname is required.');
+    validateField('parents_residence', 'parentsResidenceError', 'Permission to Confirm is required.');
+    validateField('godparents', 'churchAddressError', 'Church Address is required.');
     validateField('date', 'dateError', 'Date is required.');
     validateField('firstname', 'firstnameError', 'Firstname is required.');
     validateField('lastname', 'lastnameError', 'Lastname is required.');
     validateField('address', 'addressError', 'Address is required.');
+    validateField('pay_amount', 'payAmountError', 'Payable Amount is required.');
+    function validateSelect(selectId, errorId, errorMessage) {
+    const selectElement = document.getElementById(selectId);
+    const errorElement = document.getElementById(errorId);
+    
+    if (selectElement.value === "") {
+        errorElement.textContent = errorMessage;
+        selectElement.classList.add('border-error'); // Add error border
+        console.log(`Class added to ${selectId}`); // Debugging line
+        isValid = false;
+    } else {
+        errorElement.textContent = ""; // Clear the error if a valid option is selected
+        selectElement.classList.remove('border-error'); // Remove error border
+        console.log(`Class removed from ${selectId}`); // Debugging line
+    }
+}
 
+    validateSelect('eventType', 'eventTypeError', 'Please select a Priest.');
+
+    // Validate gender selection
     if (!document.querySelector('input[name="c_gender"]:checked')) {
         document.getElementById('genderError').innerText = 'Gender is required.';
         isValid = false;
     }
 
-    validateField('month', 'dobError', 'Complete Date of Birth is required.');
-    validateField('day', 'dobError', 'Complete Date of Birth is required.');
-    validateField('year', 'dobError', 'Complete Date of Birth is required.');
-    validateField('months', 'dobErrors', 'Complete Date of Birth is required.');
-    validateField('days', 'dobErrors', 'Complete Date of Birth is required.');
-    validateField('years', 'dobErrors', 'Complete Date of Birth is required.');
-    validateField('start_time', 'startTimeError', 'Start Time is required.');
-    validateField('pbirth', 'pbirthError', 'Name of Church is required.');
-    validateField('father_name', 'fatherNameError', 'Father\'s Fullname is required.');
-    validateField('mother_name', 'motherNameError', 'Mother\'s Fullname is required.');
-    validateField('end_time', 'endTimeError', 'End Time is required.');
-    validateField('parents_residence', 'parentsResidenceError', 'Permission to Confirm is required.');
-    validateField('godparents', 'churchAddressError', 'Church Address is required.');
-    
-    const seminar = document.getElementById('sundays').value;
-    if (seminar === '') {
-        document.getElementById('seminarError').innerText = 'Please select a seminar';
-        document.getElementById('sundays').classList.add('error');
+    // Validate Date of Birth (month, day, year)
+    if (!document.getElementById('month').value || !document.getElementById('day').value || !document.getElementById('year').value) {
+        document.getElementById('dobErrors').innerText = 'Complete Date of Birth is required.';
         isValid = false;
-    } else {
-        document.getElementById('seminarError').innerText = '';
-        document.getElementById('sundays').classList.remove('error');
-    }
-    const priest = document.getElementById('eventType').value;
-    if (priest === '') {
-        document.getElementById('priestError').innerText = 'Please select a priest';
-        document.getElementById('eventType').classList.add('error');
-        isValid = false;
-    } else {
-        document.getElementById('priestError').innerText = '';
-        document.getElementById('eventType').classList.remove('error');
     }
 
-    
- const payAmount = document.getElementById('pay_amount').value;
-    if (payAmount === '' || isNaN(payAmount) || payAmount <= 0) {
-        document.getElementById('payAmountError').innerText = 'Please enter a valid payable amount';
-        document.getElementById('pay_amount').classList.add('error');
+    // Validate Date of Baptismal (months, days, years)
+    if (!document.getElementById('months').value || !document.getElementById('days').value || !document.getElementById('years').value) {
+        document.getElementById('dobError').innerText = 'Complete Date of Baptismal is required.';
         isValid = false;
-    } else {
-        document.getElementById('payAmountError').innerText = '';
-        document.getElementById('pay_amount').classList.remove('error');
     }
-    return isValid; // Prevent form submission if any validation fails
 
+    return isValid;
 }
+
+
 
 </script>
 

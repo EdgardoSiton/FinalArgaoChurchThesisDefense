@@ -46,10 +46,8 @@ if ($r_status === "Citizen") {
     />
     <link rel="icon" href="../assets/img/mainlogo.jpg" type="image/x-icon"
     />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
-    />
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- Fonts and icons -->
     <script src="../assets/js/plugin/webfont/webfont.min.js"></script>
     <script>
@@ -80,51 +78,137 @@ if ($r_status === "Citizen") {
   </head>
   <body>
      <!-- Modal -->
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Add Announcement</h5>
+                <h5 class="modal-title" id="exampleModalLabel">Add Donation</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <form id="modalForm">
                 <div class="modal-body">
-               
                     <div class="form-group">
-                        <label for="input1">Donator's Name</label>
-                        <input type="text" class="form-control" id="input1" placeholder="Enter name" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="input3">Amount</label>
-                        <input type="tel" class="form-control" id="input3" placeholder="Enter amount" required>
+                        <label for="donatorName">Donator's Name</label>
+                        <input type="text" class="form-control" id="donatorName" placeholder="Enter name" required>
                     </div>
                     <div class="form-group">
-                        <label for="input3">Donated On</label>
-                        <input type="date" class="form-control" id="input3" placeholder="Enter date" required>
+                        <label for="amount">Amount</label>
+                        <input type="tel" class="form-control" id="amount" placeholder="Enter amount" required>
                     </div>
                     <div class="form-group">
-                        <label for="input3">Description</label>
-                        <input type="text" class="form-control" id="input3" placeholder="Enter description" required>
+                        <label for="donatedOn">Donated On</label>
+                        <input type="date" class="form-control" id="donatedOn" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" class="form-control" id="description" placeholder="Enter description" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                <button
-                              type="button"
-                              class="btn btn-primary"
-                              id="alert_demo_6"
-                            >
-                              Submit
-                            </button>
-                             
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="submitDonation">Submit</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="donationModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportModalLabel">Generate Donation Report</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="reportForm" action="generatedonationreport.php" method="GET">
+                    <input type="hidden" name="type" id="reportTypeField" value="Donation">
+                    <input type="hidden" name="days" id="dateRangeField" value="">
+
+                    <h6>Filter by Date Range</h6>
+                    <div class="btn-group btn-group-toggle mb-3" data-toggle="buttons">
+                        <label class="btn btn-outline-primary" onclick="setDateRanges('7')">
+                            <input type="radio" name="dateRange" id="option1" autocomplete="off"> Last 7 Days
+                        </label>
+                        <label class="btn btn-outline-primary" onclick="setDateRanges('15')">
+                            <input type="radio" name="dateRange" id="option2" autocomplete="off"> Last 15 Days
+                        </label>
+                        <label class="btn btn-outline-primary" onclick="setDateRanges('30')">
+                            <input type="radio" name="dateRange" id="option3" autocomplete="off"> Last Month
+                        </label>
+                        <label class="btn btn-outline-primary" onclick="setDateRanges('365')">
+                            <input type="radio" name="dateRange" id="option4" autocomplete="off"> Last Year
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="submitReportForms()">Generate Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportModalLabel">Generate Report</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="reportForm" action="generatereport.php" method="GET">
+                    <input type="hidden" name="type" id="reportTypeField" value="All">
+                    <input type="hidden" name="days" id="dateRangeField" value="">
+
+                    <h6>Filter by Type</h6>
+                    <div class="dropdown mb-3">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="filterDropdownButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Select Report Type
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="filterDropdownButton">
+                            <a class="dropdown-item" href="#" onclick="setReportType('All')">All</a>
+                            <a class="dropdown-item" href="#" onclick="setReportType('Baptism')">Baptism</a>
+                            <a class="dropdown-item" href="#" onclick="setReportType('Funeral')">Funeral</a>
+                            <a class="dropdown-item" href="#" onclick="setReportType('Confirmation')">Confirmation</a>
+                            <a class="dropdown-item" href="#" onclick="setReportType('Wedding')">Wedding</a>
+                            <a class="dropdown-item" href="#" onclick="setReportType('RequestForm')">Request Form</a>
+                        </div>
+                    </div>
+
+                    <h6>Filter by Date Range</h6>
+                    <div class="btn-group btn-group-toggle mb-3" data-toggle="buttons">
+                        <label class="btn btn-outline-primary" onclick="setDateRange('7')">
+                            <input type="radio" name="dateRange" id="option1" autocomplete="off"> Last 7 Days
+                        </label>
+                        <label class="btn btn-outline-primary" onclick="setDateRange('15')">
+                            <input type="radio" name="dateRange" id="option2" autocomplete="off"> Last 15 Days
+                        </label>
+                        <label class="btn btn-outline-primary" onclick="setDateRange('30')">
+                            <input type="radio" name="dateRange" id="option3" autocomplete="off"> Last Month
+                        </label>
+                        <label class="btn btn-outline-primary" onclick="setDateRange('365')">
+                            <input type="radio" name="dateRange" id="option4" autocomplete="off"> Last Year
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="submitReportForm()">Generate Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 
 
@@ -139,6 +223,7 @@ if ($r_status === "Citizen") {
               class="d-flex align-items-left align-items-md-center flex-column flex-md-row pt-2 pb-4"
             >
               <div>
+                
                 <h3 class="fw-bold mb-3">Admin Dashboard</h3>
               </div>
               <div class="ms-md-auto py-2 py-md-0">
@@ -155,6 +240,18 @@ if ($r_status === "Citizen") {
         </ul>
     </div>
 </div>
+
+            </div>
+            <div class="ms-md-auto py-2 py-md-0">
+                    <button class="btn btn-primary btn-round" data-toggle="modal" data-target="#reportModal">
+                        Generate Report Acknowledgement
+                    </button>
+                </div>
+                <div class="ms-md-auto py-2 py-md-0">
+                    <button class="btn btn-primary btn-round" data-toggle="modal" data-target="#donationModal">
+                        Generate Donation Report
+                    </button>
+                </div>
 
             </div>
             <div class="row">
@@ -293,6 +390,16 @@ if ($r_status === "Citizen") {
       </div>
     </div>
         <!-- jQuery first -->
+      <!-- jQuery -->
+      <script>
+        
+      </script><!-- jQuery (ensure only one version, e.g., 3.5.1) -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+      <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <!-- Popper.js (required for Bootstrap 4) -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
@@ -330,7 +437,144 @@ if ($r_status === "Citizen") {
     <!-- Kaiadmin DEMO methods, don't include it in your project! -->
     <script src="../assets/js/setting-demo.js"></script>
     <script src="../assets/js/demo.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <!-- SweetAlert2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
     <script>
+      
+function setDateRanges(days) {
+    document.getElementById('dateRangeField').value = days; // Set the value of the hidden input
+}
+
+
+function submitReportForms() {
+    const dateRange = document.getElementById('dateRangeField').value;
+    
+    // Check if a date range is selected
+    if (!dateRange) {
+        alert('Please select a date range.');
+        return; // Prevent form submission if no range is selected
+    }
+
+    // Submit the form
+    document.getElementById('reportForm').submit();
+}
+
+   let selectedReportType = 'All'; // Default report type
+let selectedDateRange = ''; // Default date range
+
+function setReportType(type) {
+    selectedReportType = type;
+    document.getElementById('reportTypeField').value = type;
+    document.getElementById('filterDropdownButton').innerText = type; // Update button text
+}
+
+function setDateRange(days) {
+    selectedDateRange = days;
+    document.getElementById('dateRangeField').value = days; // Set the hidden input value
+}
+
+function submitReportForm() {
+    // Validate only the date range
+    if (selectedDateRange === '') {
+        // Use SweetAlert to show validation message
+        Swal.fire({
+            icon: 'warning',
+            title: 'Incomplete Selection',
+            text: 'Please select a date range before generating the report.',
+            confirmButtonText: 'OK'
+        });
+    } else {
+        // If validation passes, submit the form
+        document.getElementById('reportForm').submit();
+    }
+}
+
+
+    </script>
+    <script>
+$(document).ready(function() {
+    $('#submitDonation').on('click', function() {
+        // Get form data
+        var donatorName = $('#donatorName').val();
+        var amount = $('#amount').val();
+        var donatedOn = $('#donatedOn').val();
+        var description = $('#description').val();
+
+        // Validate form inputs
+        if (donatorName === '' || amount === '' || donatedOn === '' || description === '') {
+            Swal.fire("Validation Error", "All fields are required!", "error");
+            return; // Exit the function if validation fails
+        } else if (isNaN(amount) || parseFloat(amount) <= 0) {
+            Swal.fire("Invalid Amount", "Please enter a valid donation amount!", "error");
+            return; // Exit the function if validation fails
+        }
+
+        // Perform AJAX request
+        $.ajax({
+            url: '../../Controller/Donation_con.php', // Your PHP file
+            type: 'POST',
+            data: {
+                action: 'add_donation',
+                d_name: donatorName,
+                amount: amount,
+                donated_on: donatedOn,
+                description: description
+            },
+            success: function(response) {
+                console.log(response); // Log the response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Donation added successfully!'
+                }).then(() => {
+                    $('#myModal').modal('hide'); // Close the modal
+                    location.reload(); // Refresh the page or update the donation list
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error("AJAX Error: ", error); // Log the error
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error adding donation: ' + error
+                });
+            }
+        });
+    });
+});
+        document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'success') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: 'Action completed successfully!',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
       $("#lineChart").sparkline([102, 109, 120, 99, 110, 105, 115], {
         type: "line",
         height: "70",

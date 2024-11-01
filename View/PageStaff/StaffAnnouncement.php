@@ -5,7 +5,9 @@ $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
 require_once '../../Model/staff_mod.php';
 require_once '../../Model/db_connection.php';
+require_once '../../Model/citizen_mod.php';
 $staff = new Staff($conn);
+$citizen = new Citizen($conn);
 $announcements = $staff->getAnnouncements();
 $loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
 $r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
@@ -41,6 +43,10 @@ if ($r_status === "Admin") {
     <link rel="icon" href="../assets/img/mainlogo.jpg" type="image/x-icon"
     />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
     <!-- Fonts and icons -->
     <script src="../assets/js/plugin/webfont/webfont.min.js"></script>
     <script>
@@ -65,68 +71,67 @@ if ($r_status === "Admin") {
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css" />
     <link rel="stylesheet" href="../assets/css/plugins.min.css" />
     <link rel="stylesheet" href="../assets/css/kaiadmin.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<!-- Bootstrap JS -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 
     <!-- CSS Just for demo purpose, don't include it in your project -->
     <link rel="stylesheet" href="../assets/css/demo.css" />
+    <style>
+textarea.form-control {
+    min-height: calc(1.5em + 10rem + calc(var(--bs-border-width) * 2));
+    width: 100%; /* or a specific width like 400px */
+}
+.modal-dialog {
+    max-width: 800px; /* Adjust this width as necessary */
+}
+
+</style>
   </head>
   <body>
-    <!-- Modal -->
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal fade" id="editAnnouncementModal" tabindex="-1" role="dialog" aria-labelledby="editAnnouncementLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Add Announcement</h5>
+                <h5 class="modal-title" id="editAnnouncementLabel">Edit Announcement</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="modalForm" method="POST" action="../../Controller/addannounce_con.php">
-    <div class="modal-body">
-        <div class="form-group">
-            <label for="eventDate">Event Date</label>
-            <input type="hidden" name="announcement" value = "announcement">
-            <input type="date" class="form-control" id="eventDate" name="eventDate" placeholder="Enter event date" >
-        </div>
-        <div class="form-group">
-            <label for="startTime">Start Time</label>
-            <input type="time" class="form-control" id="startTime" name="startTime" placeholder="Enter start time" >
-        </div>
-        <div class="form-group">
-            <label for="endTime">End Time</label>
-            <input type="time" class="form-control" id="endTime" name="endTime" placeholder="Enter end time" >
-        </div>
-        <div class="form-group">
-            <label for="eventType">Event Type</label>
-            <select class="form-control" id="eventType" name="eventType" >
-                <option value="" disabled selected>Select Event</option>
-                <option value="MassBaptism">Mass Baptism</option>
-                <option value="MassMarriage">Mass Marriage</option>
-                <option value="MassConfirmation">Mass Confirmation</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="eventTitle">Event Title</label>
-            <input type="text" class="form-control" id="eventTitle" name="eventTitle" placeholder="Enter title">
-        </div>
-        <div class="form-group">
-            <label for="description">Description</label>
-            <input type="text" class="form-control" id="description" name="description" placeholder="Enter description">
-        </div>
-        <div class="form-group">
-            <label for="capacity">Capacity</label>
-            <input type="number" class="form-control" id="capacity" name="capacity" placeholder="Enter capacity">
-        </div>
-    </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="submit" class="btn btn-primary">Submit</button>
-    </div>
-</form>
-
+            <div class="modal-body">
+                <form id="editAnnouncementForm">
+                <input type="hidden" name="action" value="update"> 
+                    <input type="hidden" id="announcement_id" name="announcement_id">
+                    <div class="form-group">
+                        <label for="speaker_ann">Speaker</label>
+                        <input type="text" class="form-control" id="speaker_ann" name="speaker_ann" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="capacity">Capacity</label>
+                        <input type="number" class="form-control" id="capacity" name="capacity" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveChanges">Save changes</button>
+            </div>
         </div>
     </div>
 </div>
-
 
   <?php  require_once 'sidebar.php'?>
       <div class="main-panel">
@@ -150,8 +155,17 @@ if ($r_status === "Admin") {
         <div class="col-md-4">
             <div class="card card-post card-round">
                 <div class="card-body">
+                <h5>
+                <select onchange="handleAction(this, '<?php echo htmlspecialchars($announcement['announcement_id']); ?>')">
+    <option value="" disabled selected>Actions</option>
+    <option value="edit">Edit</option>
+    <option value="delete">Delete</option>
+</select>
+        </h5>
                     <div class="separator-solid"></div>
+                    
                     <p class="card-category text-info mb-1">
+                  
                     <h3 class="card-title">
                         <a href="#">Speaker:<?php echo htmlspecialchars($announcement['speaker_ann']) ?></a>
                     </h3>
@@ -235,6 +249,9 @@ if ($r_status === "Admin") {
    
     <!-- jQuery, Popper.js, and Bootstrap JS -->
     <!-- jQuery first -->
+
+
+
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <!-- Popper.js (required for Bootstrap 4) -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
@@ -270,9 +287,182 @@ if ($r_status === "Admin") {
 
     <!-- Kaiadmin JS -->
     <script src="../assets/js/kaiadmin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+      .dark-green-check-icon .swal2-success-line-tip,
+.dark-green-check-icon .swal2-success-line-long {
+    background-color: #1e7e34 !important; /* Darker green for the check lines */
+}
+.dark-green-check-icon .swal2-success-ring {
+    border-color: #1e7e34 !important; /* Darker green for the ring */
+}
 
-    
+    </style>
     <script>
+function handleAction(select, announcementId) {
+    const action = select.value; // Get the selected action
+
+    if (action === "edit") {
+        const announcements = <?php echo json_encode($announcements); ?>; // Fetch announcements from PHP
+        const announcement = announcements.find(a => a.announcement_id == announcementId);
+
+        if (announcement) {
+            document.getElementById("announcement_id").value = announcement.announcement_id;
+            document.getElementById("speaker_ann").value = announcement.speaker_ann;
+            document.getElementById("title").value = announcement.title;
+            document.getElementById("description").value = announcement.description;
+            document.getElementById("capacity").value = announcement.capacity;
+
+            // Show the modal
+            $('#editAnnouncementModal').modal('show');
+        }
+    } else if (action === "delete") {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '../../Controller/updateannouncement.php', // Your PHP file handling the deletion
+                    type: 'POST',
+                    data: { announcement_id: announcementId, action: 'delete' },
+                    success: function(response) {
+                        Swal.fire(
+                            'Deleted!',
+                            'The announcement has been deleted.',
+                            'success'
+                        ).then(() => {
+                            location.reload(); // Refresh page after deletion
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire('Error', 'There was a problem deleting the announcement.', 'error');
+                    }
+                });
+            }
+        });
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("saveChanges").addEventListener("click", function() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you want to save these changes?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, save changes!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const formData = new FormData(document.getElementById("editAnnouncementForm"));
+                
+                fetch("../../Controller/updateannouncement.php", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Saved!', 'Announcement updated successfully!', 'success')
+                        .then(() => {
+                            location.reload(); // Reload the page to see changes
+                        });
+                    } else {
+                        Swal.fire('Error', 'Error updating announcement: ' + data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    Swal.fire('Error', 'An unexpected error occurred.', 'error');
+                });
+            }
+        });
+    });
+});
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'success') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Form submitted successfully!',
+            text: 'Please Check your Information.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'wider-toast',
+                icon: 'dark-green-check-icon'
+            },
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
+document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'successs') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Form submitted successfully!',
+            text: 'Has been Change.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'wider-toast',
+                icon: 'dark-green-check-icon'
+            },
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
+document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'deleted') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Form submitted successfully!',
+            text: 'Has been Deleted.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'wider-toast',
+                icon: 'dark-green-check-icon'
+            },
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
       $("#lineChart").sparkline([102, 109, 120, 99, 110, 105, 115], {
         type: "line",
         height: "70",

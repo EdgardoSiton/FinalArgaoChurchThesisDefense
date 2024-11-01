@@ -2,8 +2,8 @@
 require_once '../../Model/staff_mod.php';
 require_once '../../Model/db_connection.php';
 $userManager = new Staff($conn);
-$recentNotifications = $userManager->getRecentNotifications();
-$unreadCount = $userManager->getUnreadNotificationCount();
+
+
 
 $loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
 $r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
@@ -204,50 +204,7 @@ if ($r_status === "Citizen") {
                 </li>
   
                  <!-- start for notification bell -->
-                 <li class="nav-item topbar-icon dropdown hidden-caret">
-        <a
-            class="nav-link dropdown-toggle"
-            href="#"
-            id="notifDropdown"
-            role="button"
-            data-bs-toggle="dropdown"
-            aria-haspopup="true"
-            aria-expanded="false"
-        >
-            <i class="fa fa-bell"></i>
-            <span class="notification"><?php echo $unreadCount; ?></span>
-        </a>
-        <ul
-            class="dropdown-menu notif-box animated fadeIn"
-            aria-labelledby="notifDropdown"
-        >
-            <li>
-                <div class="dropdown-title">
-                    You have <?php echo $unreadCount; ?> new notification(s)
-                </div>
-            </li>
-            <li>
-                <div class="notif-scroll scrollbar-outer">
-                    <div class="notif-center">
-                        <?php foreach ($recentNotifications as $notification): ?>
-                            <a href="StaffCitizenAccounts.php">
-                                <div class="notif-icon notif-primary">
-                                    <i class="fa fa-user-plus"></i>
-                                </div>
-                                <div class="notif-content">
-                                    <span class="block"><?php echo htmlspecialchars($notification['message']); ?></span>
-                                    <span class="time"><?php echo htmlspecialchars($notification['time']); ?></span>
-                                </div>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            </li>
-            <li>
-                <a class="see-all" href="javascript:void(0);">See all notifications<i class="fa fa-angle-right"></i></a>
-            </li>
-        </ul>
-    </li>
+
                 <!-- end for notification -->
 
               

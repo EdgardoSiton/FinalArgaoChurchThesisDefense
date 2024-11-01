@@ -348,7 +348,7 @@ document.getElementById('baptismForm').addEventListener('submit', function(event
     </div>
     <div class="card-action">
         <button type="submit" class="btn btn-success">Submit</button>
-        <button type="button" class="btn btn-danger" onclick="window.location.href='your_cancel_url.php'">Cancel</button>
+        <a href="javascript:history.back()" class="btn btn-danger">Cancel</a>
         <button type="button" class="btn btn-info" onclick="clearForm()">Clear</button>
     </div>
 </form>

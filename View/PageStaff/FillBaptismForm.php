@@ -444,6 +444,27 @@ if ($event_name === 'Online') {
     </div>
 </div>
 <script>
+              document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'success') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Form submitted successfully!',
+            text: 'Has Been Successful.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
     document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.approve-btn').forEach(function(button) {
         button.addEventListener('click', function() {
@@ -471,6 +492,7 @@ if ($event_name === 'Online') {
                                 'The baptism request has been approved.',
                                 'success'
                             ).then(() => {
+                                
                                 window.location.href = 'StaffSoloSched.php';
                             });
                         } else {

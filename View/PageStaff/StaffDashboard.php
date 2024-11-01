@@ -8,8 +8,13 @@ require_once '../../Model/db_connection.php';
 require_once '../../Model/citizen_mod.php';
 $userManager = new Staff($conn);
 $citizen = new Citizen($conn);
+$pendingCount = $userManager->countPendingAppointments();
+$MasspendingCount = $userManager->countPendingMassAppointments();
 $currentUsers = $userManager->getCurrentUsers();
 $approvedRegistrations = $userManager->getApprovedRegistrations();
+$pendingRequestCount = $userManager->countPendingRequestForms();
+$pendingCitizenCount = $userManager->countPendingCitizenAccounts();
+$countApprovePriestForms = $userManager->countApprovePriestForms();
 $approvedCount = count($approvedRegistrations);
 $scheduleDate = $_SESSION['selectedDate'] ?? null;
 $startTime = $_SESSION['startTime'] ?? null;
@@ -261,8 +266,30 @@ function navigateToEvent() {
                       </div>
                       <div class="col col-stats ms-3 ms-sm-0">
                         <div class="numbers">
-                          <p class="card-category">Citizen Schedules</p>
-                          <h4 class="card-title">1303</h4>
+                        <p class="card-category">Event Scheduling Waiting Approval</p>
+<h4 class="card-title"><?php echo $pendingCount; ?></h4>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <div class="card card-stats card-round">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-icon">
+                        <div
+                          class="icon-big text-center icon-info bubble-shadow-small"
+                        >
+                          <i class="far fa-calendar-check
+                          "></i>
+                        </div>
+                      </div>
+                      <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="numbers">
+                        <p class="card-category">EventMass Scheduling Waiting Approval</p>
+<h4 class="card-title"><?php echo $MasspendingCount; ?></h4>
                         </div>
                       </div>
                     </div>
@@ -282,9 +309,8 @@ function navigateToEvent() {
                       </div>
                       <div class="col col-stats ms-3 ms-sm-0">
                         <div class="numbers">
-                          <p class="card-category">Event Announcement</p>
-                          <h4 class="card-title">                            <td class="text-end"><span>&#8369;</span>
-                            1,345</h4>
+                        <p class="card-category">RequestForm Scheduling Pending</p>
+<h4 class="card-title"><?php echo number_format($pendingRequestCount); ?></h4>
                         </div>
                       </div>
                     </div>
@@ -304,8 +330,29 @@ function navigateToEvent() {
                       </div>
                       <div class="col col-stats ms-3 ms-sm-0">
                         <div class="numbers">
-                          <p class="card-category">Announcement Inquire</p>
-                          <h4 class="card-title">576</h4>
+                        <p class="card-category">Citizen Pending Account</p>
+<h4 class="card-title"><?php echo number_format($pendingCitizenCount); ?></h4>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <div class="card card-stats card-round">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-icon">
+                        <div
+                          class="icon-big text-center icon-secondary bubble-shadow-small"
+                        >
+                          <i class="fas fa-dice-two"></i>
+                        </div>
+                      </div>
+                      <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="numbers">
+                        <p class="card-category">Priest Has been approved .Approved their Schedule Now</p>
+<h4 class="card-title"><?php echo number_format($countApprovePriestForms); ?></h4>
                         </div>
                       </div>
                     </div>
@@ -313,6 +360,8 @@ function navigateToEvent() {
                 </div>
               </div>
             </div>
+
+            
            
             
           
@@ -321,28 +370,11 @@ function navigateToEvent() {
                 <div class="card card-round">
                   <div class="card-body">
                     <div class="card-head-row card-tools-still-right">
-                      <div class="card-title">New Citizen User Pending</div>
+                      <div class="card-title">New Citizen Pending This Week</div>
                       <div class="card-tools">
                         <div class="dropdown">
-                          <button
-                            class="btn btn-icon btn-clean me-0"
-                            type="button"
-                            id="dropdownMenuButton"
-                            data-bs-toggle="dropdown"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                          >
-                            <i class="fas fa-ellipsis-h"></i>
-                          </button>
-                          <div
-                            class="dropdown-menu"
-                            aria-labelledby="dropdownMenuButton"
-                          >
-                            <a class="dropdown-item" href="#">Action</a>
-                            <a class="dropdown-item" href="#">Another action</a>
-                            <a class="dropdown-item" href="#"
-                              >Something else here</a
-                            >
+            
+                       
                           </div>
                         </div>
                       </div>
@@ -360,10 +392,10 @@ function navigateToEvent() {
                 <div class="status"><?php echo htmlspecialchars($user['email']); ?></div>
             </div>
             <button class="btn btn-icon btn-link op-8 me-1">
-                <i class="far fa-envelope"></i>
+        
             </button>
             <button class="btn btn-icon btn-link btn-danger op-8">
-                <i class="fas fa-ban"></i>
+            
             </button>
         </div>
     <?php endforeach; ?>
@@ -424,6 +456,48 @@ function navigateToEvent() {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
+            document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'successs') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Form submitted successfully!',
+            text: 'All set! Your request has been processed.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
+      document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'success') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Form submitted successfully!',
+            text: 'Your submission has been received and is awaiting approval for priest.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
 $(document).ready(function() {
     $('#submitEvent').on('click', function() {
         // Gather form data
@@ -469,18 +543,11 @@ $(document).ready(function() {
             url: '../../Controller/insert_mass_con.php', // The PHP file that will handle the database insertion
             data: formData,
             success: function(response) {
-                // Display SweetAlert success message
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Event Added!',
-                    text: 'The event was added successfully.',
-                    showConfirmButton: false,
-                    timer: 2000 // Automatically closes after 2 seconds
-                }).then(function() {
-                    // Hide modal and refresh the page after the SweetAlert closes
-                    $('#myModal').modal('hide');
-                    location.reload(); // Refresh the page
-                });
+                // Hide the modal
+                $('#myModal').modal('hide'); // Assuming your modal has the ID 'myModal'
+
+                // Automatically refresh the page after hiding the modal
+                location.reload(); // Refresh the page
             },
             error: function() {
                 Swal.fire({

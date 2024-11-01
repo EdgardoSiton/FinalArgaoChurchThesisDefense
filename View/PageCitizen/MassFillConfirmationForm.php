@@ -31,7 +31,10 @@ if ($r_status === "Admin") {
   header("Location: ../PagePriest/index.php"); // Change to your staff page
   exit();
 }
-
+$startTime = $announcementData['start_time'];
+$formattedTime = date("g:i A", strtotime($startTime));
+$endTime = $announcementData['end_time'];
+$formattedEndTime = date("g:i A", strtotime($endTime));
 
 ?>
 
@@ -298,7 +301,7 @@ small {
         <div class="col-md-6 col-lg-4">
             <div class="form-group">
                 <label for="start_time">Start Time</label>
-                <input type="text" class="form-control" id="start_time" name="start_time" placeholder="" value="<?php echo htmlspecialchars($announcementData['start_time']); ?>" readonly />
+                <input type="text" class="form-control" id="start_time" name="start_time" value="<?php echo htmlspecialchars($formattedTime); ?>" readonly />
                 <span class="error" id="startTimeError"></span>
             </div>
             <div class="form-group">
@@ -369,7 +372,7 @@ small {
         <div class="col-md-6 col-lg-4">
             <div class="form-group">
                 <label for="end_time">End Time</label>
-                <input type="text" class="form-control" id="end_time" name="end_time" placeholder="" value="<?php echo htmlspecialchars($announcementData['end_time']); ?>"readonly />
+                <input type="text" class="form-control" id="end_time" name="end_time" value="<?php echo htmlspecialchars($formattedEndTime); ?>" readonly />
                 <span class="error" id="endTimeError"></span>
             </div>
             <div class="form-group">

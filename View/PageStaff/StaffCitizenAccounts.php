@@ -2,9 +2,9 @@
 require_once '../../Model/login_mod.php';
 require_once '../../Model/db_connection.php';
 
-// Create a new User object and call the getAccount method
 $getaccount = new User($conn);
-$userInfo = $getaccount->getAccount();
+$statusFilter = isset($_GET['status_filter']) ? $_GET['status_filter'] : 'Pending';
+$userInfo = $getaccount->getAccount($statusFilter);
 
 // Start session and retrieve session variables
 session_start();
@@ -21,14 +21,15 @@ if (!$loggedInUserEmail) {
 
 // Redirect staff users to the staff page, not the citizen page
 if ($r_status === "Citizen") {
-  header("Location: ../PageCitizen/CitizenPage.php"); // Change to your staff page
+  header("Location: ../PageCitizen/CitizenPage.php"); 
   exit();
 }
 if ($r_status === "Admin") {
-  header("Location: ../PageAdmin/AdminDashboard.php"); // Change to your staff page
+  header("Location: ../PageAdmin/AdminDashboard.php"); 
   exit();
-}if ($r_status === "Priest") {
-  header("Location: ../PagePriest/index.php"); // Change to your staff page
+}
+if ($r_status === "Priest") {
+  header("Location: ../PagePriest/index.php"); 
   exit();
 }
 ?>
@@ -78,61 +79,61 @@ if ($r_status === "Admin") {
   <?php  require_once 'sidebar.php'?>
       <div class="main-panel">
       <?php  require_once 'header.php'?>
-        
-     
-        <div class="container">
-            <div class="page-inner">
-            <form method="POST">
+      <div class="container">
+      <div class="page-inner">
+        <!-- Separate form for status filter -->
+        <form method="GET" action="StaffCitizenAccounts.php">
+          <label for="status_filter">Filter by Status:</label>
+          <select id="status_filter" name="status_filter" onchange="this.form.submit()">
+              <option value="Pending" <?php echo ($statusFilter === 'Pending') ? 'selected' : ''; ?>>Pending</option>
+              <option value="Approved" <?php echo ($statusFilter === 'Approved') ? 'selected' : ''; ?>>Approved</option>
+          </select>
+        </form>
 
-                <div class="col-md-6">
-                  <div class="card">
-                    <div class="card-header">
-                      <div class="card-title">Citizen Account List</div>
-                    </div>
-                    <div class="card-body">
-                      <table class="table table-hover">
-                        <thead>
-                          <tr>
-                            <th scope="col">ID No.</th>
-                            <th scope="col">Citizen Name</th>
-                            <th scope="col">Phone Number</th>
-                            <th scope="col">Email</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-    <?php
-    // Check if the $userInfo array has data
-    if (!empty($userInfo)) {
-        // Loop through the result and display each record in a table row
-        foreach ($userInfo as $index => $user) {
-            $citizendId = htmlspecialchars($user['citizend_id']);
-            $fullname = htmlspecialchars($user['fullname']);
-            $phone = htmlspecialchars($user['phone']);
-            $email = htmlspecialchars($user['email']);
-            $status = htmlspecialchars($user['r_status']);
-            
-            // Create the view button with a link or JavaScript function
-            $viewButton = '<a href="viewCitizen.php?id=' . $citizendId . '" class="btn btn-primary">View</a>';
-
-            echo '<tr>';
-            echo '<td>' . ($index + 1) . '</td>'; // Display a unique index for each row
-            echo '<td>' . $fullname . '</td>'; // Safely display the fullname
-            echo '<td>' . $phone . '</td>'; // Safely display the phone
-            echo '<td>' . $email . '</td>'; // Safely display the email
-            echo '<td>' . $status . '</td>'; // Safely display the status
-            echo '<td>' . $viewButton . '</td>'; // Display the view button
-            echo '</tr>';
-        }
-    } else {
-        // If no data is returned, show a message in the table
-        echo '<tr>';
-        echo '<td colspan="6">No pending citizens found.</td>'; // Adjust colspan according to your table
-        echo '</tr>';
-    }
-    ?>
-</tbody>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Citizen Account List</div>
+            </div>
+            <div class="card-body">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th scope="col">ID No.</th>
+                    <th scope="col">Citizen Name</th>
+                    <th scope="col">Phone Number</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php
+                  if (!empty($userInfo)) {
+                      foreach ($userInfo as $index => $user) {
+                          $citizendId = htmlspecialchars($user['citizend_id']);
+                          $fullname = htmlspecialchars($user['fullname']);
+                          $phone = htmlspecialchars($user['phone']);
+                          $email = htmlspecialchars($user['email']);
+                          $status = htmlspecialchars($user['r_status']);
+                          
+                          $viewButton = '<a href="viewCitizen.php?id=' . $citizendId . '" class="btn btn-primary">View</a>';
+                          echo '<tr>';
+                          echo '<td>' . ($index + 1) . '</td>';
+                          echo '<td>' . $fullname . '</td>';
+                          echo '<td>' . $phone . '</td>';
+                          echo '<td>' . $email . '</td>';
+                          echo '<td>' . $status . '</td>';
+                          echo '<td>' . $viewButton . '</td>';
+                          echo '</tr>';
+                      }
+                  } else {
+                      echo '<tr>';
+                      echo '<td colspan="6">No records found.</td>';
+                      echo '</tr>';
+                  }
+                  ?>
+                </tbody>
                       </table>
                     </div>
                   </div>

@@ -144,7 +144,7 @@ if ($r_status === "Admin") {
                 <td><?= htmlspecialchars($seminarDate); ?></td>
                 <td><?= htmlspecialchars($seminarTime); ?></td>
                 <td><?= htmlspecialchars($appointment['roles']); ?></td>
-                <td><?= htmlspecialchars($appointment['payable_amount']); ?></td>
+                <td>₱<?= htmlspecialchars($appointment['payable_amount']); ?></td>
                 
                 <td>
                 <?php

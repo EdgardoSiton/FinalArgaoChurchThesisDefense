@@ -5,7 +5,163 @@ class Admin {
     public function __construct($conn) {
         $this->conn = $conn;
     
+    }   public function addDonation($d_name, $amount, $donated_on, $description) {
+        $stmt = $this->conn->prepare("INSERT INTO donation (d_name, amount, donated_on, description) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("sdss", $d_name, $amount, $donated_on, $description);
+        if ($stmt->execute()) {
+            return true;
+        } else {
+            return false;
+        }
     }
+    public function generateDonationReport($dateRange) {
+        // Initialize the date condition and end date
+        $dateCondition = '';
+        $startDate = null;
+        $endDate = date('Y-m-d H:i:s'); // Current date and time
+    
+        // Determine the start date based on the date range
+        if ($dateRange) {
+            switch ($dateRange) {
+                case '7':
+                    $startDate = date('Y-m-d H:i:s', strtotime('-7 days'));
+                    break;
+                case '15':
+                    $startDate = date('Y-m-d H:i:s', strtotime('-15 days'));
+                    break;
+                case '30':
+                    $startDate = date('Y-m-d H:i:s', strtotime('-30 days'));
+                    break;
+                case '365':
+                    $startDate = date('Y-m-d H:i:s', strtotime('-1 year'));
+                    break;
+            }
+            
+            // Set the date condition for the SQL query if a start date is determined
+            if ($startDate) {
+                $dateCondition = "WHERE donated_on BETWEEN ? AND ?";
+            }
+        }
+    
+        // Construct the SQL query
+        $query = "SELECT d_name, amount, description, donated_on FROM donation $dateCondition";
+    
+        // Prepare the statement
+        $stmt = $this->conn->prepare($query);
+    
+        // Check if the statement was prepared successfully
+        if ($stmt === false) {
+            die('MySQL prepare error: ' . $this->conn->error);
+        }
+    
+        // Bind the parameters if a date condition is set
+        if ($dateCondition) {
+            $stmt->bind_param('ss', $startDate, $endDate); // Bind the start and end date parameters as strings
+        }
+    
+        // Execute the statement
+        $stmt->execute();
+    
+        // Get the result
+        $result = $stmt->get_result(); // Get the result set from the prepared statement
+    
+        // Fetch all results as an associative array
+        return $result->fetch_all(MYSQLI_ASSOC); // Use mysqli's fetch_all method
+    }
+    
+
+    
+    
+    public function generateAppointmentReport($type = null, $days = null) {
+        // Start building the base query
+        $sql = "
+            SELECT 'RequestForm' AS type, 
+                   r.req_person AS fullnames, 
+                   r.req_category AS Event_Name, 
+                   a.payable_amount, 
+                   r.role AS roles, 
+                   a.paid_date 
+            FROM req_form r
+            JOIN appointment_schedule a ON r.req_id = a.request_id
+            WHERE r.status = 'Approved' AND (a.status = 'Completed' AND a.p_status = 'Paid')
+        ";
+    
+        $sql .= "
+            UNION ALL
+            SELECT 'Baptism' AS type, 
+                   b.fullname AS fullnames, 
+                   b.event_name AS Event_Name, 
+                   a.payable_amount, 
+                   b.role AS roles, 
+                   a.paid_date 
+            FROM baptismfill b
+            JOIN appointment_schedule a ON b.baptism_id = a.baptismfill_id
+            WHERE b.status = 'Approved' AND (a.status = 'Completed' AND a.p_status = 'Paid')
+        ";
+    
+        $sql .= "
+            UNION ALL
+            SELECT 'Confirmation' AS type, 
+                   c.fullname AS fullnames, 
+                   c.event_name AS Event_Name, 
+                   a.payable_amount, 
+                   c.role AS roles, 
+                   a.paid_date 
+            FROM confirmationfill c
+            JOIN appointment_schedule a ON c.confirmationfill_id = a.confirmation_id
+            WHERE c.status = 'Approved' AND (a.status = 'Completed' AND a.p_status = 'Paid')
+        ";
+    
+        $sql .= "
+            UNION ALL
+            SELECT 'Marriage' AS type, 
+                   m.groom_name AS fullnames, 
+                   m.event_name AS Event_Name, 
+                   a.payable_amount, 
+                   m.role AS roles, 
+                   a.paid_date 
+            FROM marriagefill m
+            JOIN appointment_schedule a ON m.marriagefill_id = a.marriage_id
+            WHERE m.status = 'Approved' AND (a.status = 'Completed' AND a.p_status = 'Paid')
+        ";
+    
+        // Initialize an array for WHERE conditions
+        $conditions = [];
+        $params = []; // Array to hold the parameters for binding
+    
+        // Apply the type filter if it’s set
+        if ($type && $type !== 'All') {
+            $conditions[] = "type = ?";
+            $params[] = $type; // Add the type to the parameters
+        }
+    
+        // Apply the date range filter if provided
+        if ($days) {
+            $dateCondition = date('Y-m-d', strtotime("-$days days"));
+            $conditions[] = "paid_date >= ?";
+            $params[] = $dateCondition; // Add the date condition to the parameters
+        }
+    
+        // Append the conditions to the main SQL query
+        if ($conditions) {
+            $sql = "SELECT * FROM ({$sql}) AS main_report WHERE " . implode(" AND ", $conditions);
+        }
+    
+        // Prepare the statement
+        $stmt = $this->conn->prepare($sql);
+    
+        // Dynamically bind the parameters
+        if ($params) {
+            // Create a string for the types of parameters
+            $types = str_repeat('s', count($params)); // Assuming all parameters are strings
+            $stmt->bind_param($types, ...$params); // Bind the parameters
+        }
+    
+        // Execute and return the results
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC); // Fetch results as associative array
+    }
+    
     public function getTotalPayableAmount() {
         // Query to calculate the total payable amount across all appointments
         $sql = "SELECT SUM(payable_amount) AS total_payable_amount 
@@ -192,6 +348,7 @@ class Admin {
     }
     public function getBaptismAppointments() {
         $sql = "SELECT 
+        a.paid_date AS p_date,
          'Baptism' AS type,
          b.status AS status,
             b.fullname AS fullnames,
@@ -224,6 +381,7 @@ class Admin {
 UNION 
 
 SELECT 
+a.paid_date AS p_date,
          'Baptism' AS type,
          b.status AS status,
             b.fullname AS fullnames,

@@ -10,8 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $citizen = new User($conn);
         
         if ($action === 'archive') {
+            $_SESSION['status'] = "success";
             $result = $citizen->archiveCitizen($citizen_id, 'Unactive');
+
         } elseif ($action === 'unarchive') {
+            $_SESSION['status'] = "success";
             $result = $citizen->archiveCitizen($citizen_id, 'Active');
         } else {
             echo json_encode(['success' => false, 'message' => 'Invalid action.']);

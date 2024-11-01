@@ -9,12 +9,121 @@ class Staff {
     private $conn;
     private $regId;
 
+    public function countPendingCitizenAccounts() {
+        $query = "SELECT COUNT(*) as pending_count FROM `citizen` WHERE r_status = 'Pending'";
+        $stmt = $this->conn->prepare($query);
+        $pendingCount = 0;
+    
+        if ($stmt) {
+            $stmt->execute();
+            $stmt->bind_result($pending_count);
+            $stmt->fetch();
+            $pendingCount = $pending_count ?? 0;
+            $stmt->close();
+        }
+    
+        return $pendingCount;
+    }
+    
     public function __construct($conn, $regId = null) {
         $this->conn = $conn;
         $this->regId = $regId;
         $this->updatePendingAppointments();
         $this->deleteExpiredAnnouncements();
     }  
+    public function countPendingAppointments() {
+        $tables = ['baptismfill', 'confirmationfill', 'defuctomfill', 'marriagefill'];
+        $totalPending = 0;
+    
+        foreach ($tables as $table) {
+            $query = "SELECT COUNT(*) as pending_count FROM `$table` WHERE status = 'Pending' AND event_name NOT LIKE '%Mass%'";
+            $stmt = $this->conn->prepare($query);
+            
+            if ($stmt) {
+                $stmt->execute();
+                $stmt->bind_result($pending_count);
+                $stmt->fetch();
+                $totalPending += $pending_count ?? 0;
+                $stmt->close();
+            }
+        }
+    
+        return $totalPending;
+    }
+    public function countPendingRequestForms() {
+        $query = "SELECT COUNT(*) as pending_count FROM `req_form` WHERE status = 'Pending'";
+        $stmt = $this->conn->prepare($query);
+        $pendingCount = 0;
+    
+        if ($stmt) {
+            $stmt->execute();
+            $stmt->bind_result($pending_count);
+            $stmt->fetch();
+            $pendingCount = $pending_count ?? 0;
+            $stmt->close();
+        }
+    
+        return $pendingCount;
+    }
+    public function countApprovePriestForms() {
+        $tables = ['baptismfill', 'confirmationfill', 'defuctomfill', 'marriagefill', 'req_form'];
+        $totalApproved = 0;
+    
+        foreach ($tables as $table) {
+            // Build the base query
+            $query = "
+                SELECT COUNT(*) as approved_count 
+                FROM `$table`
+                LEFT JOIN `priest_approval` ON `$table`.approval_id = `priest_approval`.approval_id 
+                WHERE `priest_approval`.pr_status = 'Approved'
+                AND `$table`.status = 'Pending'
+            ";
+            
+            // Add event_name condition for all tables except 'req_form'
+            if ($table !== 'req_form') {
+                $query .= " AND `$table`.event_name NOT LIKE '%Mass%'";
+            }
+            
+            // Prepare and execute the query
+            $stmt = $this->conn->prepare($query);
+            
+            if ($stmt) {
+                $stmt->execute();
+                $stmt->bind_result($approved_count);
+                $stmt->fetch();
+                $totalApproved += $approved_count ?? 0;
+                $stmt->close();
+            }
+        }
+    
+        return $totalApproved;
+    }
+    
+    
+    
+    public function countPendingMassAppointments() {
+        $tables = ['baptismfill', 'confirmationfill', 'defuctomfill', 'marriagefill'];
+        $totalPendings = 0;
+    
+        foreach ($tables as $table) {
+            $query = "SELECT COUNT(*) as pending_count FROM `$table` WHERE status = 'Pending' AND event_name LIKE '%Mass%'";
+            $stmt = $this->conn->prepare($query);
+            
+            if ($stmt) {
+                $stmt->execute();
+                $stmt->bind_result($pending_count);
+                $stmt->fetch();
+                $totalPendings += $pending_count ?? 0;
+                $stmt->close();
+            }
+        }
+    
+        return $totalPendings;
+    }
+    
+
+    
+    
     public function addMassSchedule($cal_date, $startTime, $endTime, $priest_id) {
         // Start transaction
         mysqli_begin_transaction($this->conn);
@@ -506,21 +615,22 @@ public function generateSeminarReport($eventType) {
     
 
     public function deleteMassWedding($massweddingffill_id) {
-        // Combine logic to retrieve contact info and title
+        // Step 1: Retrieve citizen data and event details
         $sql = "
         SELECT 
-        c.citizend_id, 
-        c.fullname,
-        c.email, 
-        c.phone, 
-        mf.event_name 
-    FROM 
-        marriagefill mf
-   LEFT JOIN 
-    citizen c  ON c.citizend_id = mf.citizen_id 
-    WHERE 
-        mf.marriagefill_id = ?"; // Ensure this column name matches your schema
-    
+            c.citizend_id, 
+            c.fullname,
+            c.email, 
+            c.phone, 
+            mf.event_name,
+            mf.announcement_id  -- assuming marriagefill has an announcement_id for reference
+        FROM 
+            marriagefill mf
+        LEFT JOIN 
+            citizen c ON c.citizend_id = mf.citizen_id 
+        WHERE 
+            mf.marriagefill_id = ?";
+        
         $stmt = $this->conn->prepare($sql);
         if (!$stmt) {
             return json_encode(['success' => false, 'message' => 'SQL prepare error.']);
@@ -531,20 +641,18 @@ public function generateSeminarReport($eventType) {
         $result = $stmt->get_result();
     
         if ($result->num_rows > 0) {
-            // Retrieve contact info
+            // Step 2: Retrieve contact and announcement info
             $contactInfo = $result->fetch_assoc();
             $email = $contactInfo['email'];
             $citizen_name = $contactInfo['fullname'];
             $title = $contactInfo['event_name'];
+            $announcementId = $contactInfo['announcement_id']; // Store related announcement ID
         } else {
             return json_encode(['success' => false, 'message' => 'No contact info found.']);
         }
     
-        // Prepare SQL to delete baptism and associated schedule
-        $deleteSql = "DELETE mf
-                      FROM marriagefill mf
-                      WHERE mf.marriagefill_id = ?"; // Ensure this field matches your schema
-    
+        // Step 3: Delete the wedding entry
+        $deleteSql = "DELETE FROM marriagefill WHERE marriagefill_id = ?";
         $deleteStmt = $this->conn->prepare($deleteSql);
         if (!$deleteStmt) {
             return json_encode(['success' => false, 'message' => 'SQL prepare error during delete.']);
@@ -553,31 +661,47 @@ public function generateSeminarReport($eventType) {
         $deleteStmt->bind_param("i", $massweddingffill_id);
     
         if ($deleteStmt->execute()) {
-            // Send decline email after deletion
-            $emailSent = $this->sendDeclineEmail($email, $citizen_name, "Your Appointment has been deleted.",
-            "Dear {$citizen_name},<br><br>Your $title Appointment has been deleted due to unavailable capacity.<br>If you have any questions, please contact us.<br>");
+            // Step 4: Update announcement capacity after deletion
+            $updateCapacitySql = "
+            UPDATE announcement
+            SET capacity = capacity + 1  -- Increment capacity by 1
+            WHERE announcement_id = ?";
+            
+            $updateStmt = $this->conn->prepare($updateCapacitySql);
+            if (!$updateStmt) {
+                return json_encode(['success' => false, 'message' => 'SQL prepare error during capacity update.']);
+            }
+            
+            $updateStmt->bind_param("i", $announcementId);
+            $updateStmt->execute();
     
+            // Step 5: Send email notification if citizen has an email
+            $emailSent = $this->sendDeclineEmail($email, $citizen_name, "Your Appointment has been deleted.",
+            "Dear {$citizen_name},<br><br>Your {$title} Appointment has been deleted due to unavailable capacity.<br>If you have any questions, please contact us.<br>");
+            
             return $emailSent ? true : json_encode(['success' => false, 'message' => 'Email notification failed.']);
         } else {
-            return json_encode(['success' => false, 'message' => 'Failed to delete the baptism.']);
+            return json_encode(['success' => false, 'message' => 'Failed to delete the wedding.']);
         }
     }
+    
     public function deleteMassBaptism($massbaptismfillId) {
-        // Adjust query to handle cases where citizen data might be null (walk-in)
+        // Step 1: Fetch citizen data and event details
         $sql = "
         SELECT 
             c.citizend_id, 
             c.fullname, 
             c.email, 
             c.phone, 
-            b.event_name 
+            b.event_name,
+            b.announcement_id  -- assuming baptismfill table has announcement_id for reference
         FROM 
             baptismfill b 
         LEFT JOIN 
             citizen c ON c.citizend_id = b.citizen_id 
         WHERE 
-            b.baptism_id = ?"; // Adjusted query to use LEFT JOIN for optional citizen data
-        
+            b.baptism_id = ?";
+    
         $stmt = $this->conn->prepare($sql);
         if (!$stmt) {
             return json_encode(['success' => false, 'message' => 'SQL prepare error.']);
@@ -588,40 +712,54 @@ public function generateSeminarReport($eventType) {
         $result = $stmt->get_result();
     
         if ($result->num_rows > 0) {
-            // Retrieve contact info, but handle cases where citizen might not exist
+            // Step 2: Retrieve contact and announcement info
             $contactInfo = $result->fetch_assoc();
-            $email = $contactInfo['email'] ?? null; // Set to null if not available (walk-in case)
-            $citizen_name = $contactInfo['fullname'] ?? 'Walk-in Client'; // Default name for walk-ins
+            $email = $contactInfo['email'] ?? null;
+            $citizen_name = $contactInfo['fullname'] ?? 'Walk-in Client';
             $title = $contactInfo['event_name'];
+            $announcementId = $contactInfo['announcement_id']; // Store related announcement ID
         } else {
             return json_encode(['success' => false, 'message' => 'No contact info found.']);
         }
     
-        // Prepare SQL to delete baptism and associated schedule
-        $deleteSql = "DELETE FROM baptismfill WHERE baptism_id = ?"; // Ensure this field matches your schema
-        
+        // Step 3: Delete the baptism record
+        $deleteSql = "DELETE FROM baptismfill WHERE baptism_id = ?";
         $deleteStmt = $this->conn->prepare($deleteSql);
         if (!$deleteStmt) {
             return json_encode(['success' => false, 'message' => 'SQL prepare error during delete.']);
         }
     
         $deleteStmt->bind_param("i", $massbaptismfillId);
-    
+        
         if ($deleteStmt->execute()) {
-            // Check if email exists before attempting to send
+            // Step 4: Update announcement capacity after deletion
+            $updateCapacitySql = "
+            UPDATE announcement
+            SET capacity = capacity + 1  -- Increment capacity by 1
+            WHERE announcement_id = ?";
+            
+            $updateStmt = $this->conn->prepare($updateCapacitySql);
+            if (!$updateStmt) {
+                return json_encode(['success' => false, 'message' => 'SQL prepare error during capacity update.']);
+            }
+            
+            $updateStmt->bind_param("i", $announcementId);
+            $updateStmt->execute();
+            
+            // Step 5: Send email notification if citizen has an email
             if ($email) {
                 $emailSent = $this->sendDeclineEmail($email, $citizen_name, "Your Appointment has been deleted.",
                 "Dear {$citizen_name},<br><br>Your {$title} Appointment has been deleted due to unavailable capacity or incorrect information.<br>If you have any questions, please contact us.<br>");
                 
                 return $emailSent ? true : json_encode(['success' => false, 'message' => 'Email notification failed.']);
             } else {
-                // For walk-ins, you can choose to skip email or log a different message
                 return json_encode(['success' => true, 'message' => 'Walk-in appointment declined. No email sent.']);
             }
         } else {
             return json_encode(['success' => false, 'message' => 'Failed to delete the baptism.']);
         }
     }
+    
     
     public function deleteDefuctom($defuctom_id) {
         // Combine logic to retrieve contact info and title
@@ -743,6 +881,77 @@ public function generateSeminarReport($eventType) {
             return json_encode(['success' => false, 'message' => 'Failed to delete the baptism.']);
         }
     }
+    public function deleteMassConfirmation($confirmationfill_idss) {
+        // Step 1: Retrieve citizen data and event details
+        $sql = "
+        SELECT 
+            c.citizend_id, 
+            c.fullname,
+            c.email, 
+            c.phone, 
+            cf.event_name,
+            cf.announcement_id  -- assuming confirmationfill has an announcement_id for reference
+        FROM 
+            confirmationfill cf
+        LEFT JOIN 
+            citizen c ON c.citizend_id = cf.citizen_id 
+        WHERE 
+            cf.confirmationfill_id = ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            return json_encode(['success' => false, 'message' => 'SQL prepare error.']);
+        }
+    
+        $stmt->bind_param("i", $confirmationfill_idss);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        if ($result->num_rows > 0) {
+            // Step 2: Retrieve contact and announcement info
+            $contactInfo = $result->fetch_assoc();
+            $email = $contactInfo['email'];
+            $citizen_name = $contactInfo['fullname'];
+            $title = $contactInfo['event_name'];
+            $announcementId = $contactInfo['announcement_id']; // Store related announcement ID
+        } else {
+            return json_encode(['success' => false, 'message' => 'No contact info found.']);
+        }
+    
+        // Step 3: Delete the confirmation entry
+        $deleteSql = "DELETE FROM confirmationfill WHERE confirmationfill_id = ?";
+        $deleteStmt = $this->conn->prepare($deleteSql);
+        if (!$deleteStmt) {
+            return json_encode(['success' => false, 'message' => 'SQL prepare error during delete.']);
+        }
+    
+        $deleteStmt->bind_param("i", $confirmationfill_idss);
+    
+        if ($deleteStmt->execute()) {
+            // Step 4: Update announcement capacity after deletion
+            $updateCapacitySql = "
+            UPDATE announcement
+            SET capacity = capacity + 1  -- Increment capacity by 1
+            WHERE announcement_id = ?";
+            
+            $updateStmt = $this->conn->prepare($updateCapacitySql);
+            if (!$updateStmt) {
+                return json_encode(['success' => false, 'message' => 'SQL prepare error during capacity update.']);
+            }
+            
+            $updateStmt->bind_param("i", $announcementId);
+            $updateStmt->execute();
+    
+            // Step 5: Send email notification if citizen has an email
+            $emailSent = $this->sendDeclineEmail($email, $citizen_name, "Your Appointment has been deleted.",
+            "Dear {$citizen_name},<br><br>Your {$title} Appointment has been deleted due to unavailable capacity.<br>If you have any questions, please contact us.<br>");
+            
+            return $emailSent ? true : json_encode(['success' => false, 'message' => 'Email notification failed.']);
+        } else {
+            return json_encode(['success' => false, 'message' => 'Failed to delete the confirmation.']);
+        }
+    }
+    
     public function deleteConfirmation($confirmationfill_id) {
         // Combine logic to retrieve contact info and title
         $sql = "
@@ -961,16 +1170,25 @@ public function generateSeminarReport($eventType) {
 
     
     public function updatePaymentStatus($appsched_id, $p_status) {
-        $sql = "UPDATE appointment_schedule SET p_status = ? WHERE appsched_id = ?";
+        // Set the timezone to the Philippines
+        date_default_timezone_set('Asia/Manila');
+    
+        // Get the current date and time
+        $paid_date = date('Y-m-d H:i:s');
+        
+        // Update the SQL statement to include the paid_date
+        $sql = "UPDATE appointment_schedule SET p_status = ?, paid_date = ? WHERE appsched_id = ?";
         $stmt = $this->conn->prepare($sql);
         
         if ($stmt) {
-            $stmt->bind_param('si', $p_status, $appsched_id);
+            // Bind the parameters: p_status, paid_date, and appsched_id
+            $stmt->bind_param('ssi', $p_status, $paid_date, $appsched_id);
             return $stmt->execute();
         }
         return false;
     }
-
+    
+    
     // Method to update event status
     public function updateEventStatus($cappsched_id, $c_status) {
         $sql = "UPDATE appointment_schedule SET status = ? WHERE appsched_id = ?";
@@ -1481,8 +1699,26 @@ public function displaySundaysDropdown($schedule_id) {
     }
     
     
+    public function updateAnnouncement($announcementId, $speakerAnn, $title, $description, $capacity) {
+        $sql = "UPDATE announcement SET speaker_ann = ?, title = ?, description = ?, capacity = ? WHERE announcement_id = ?";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("ssssi", $speakerAnn, $title, $description, $capacity, $announcementId);
+        
+        return $stmt->execute();
+    }
+    public function deleteAnnouncement($announcementId) {
+        $sql = "DELETE FROM announcement WHERE announcement_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $announcementId);
+        if ($stmt->execute()) {
+            return true;
+        } else {
+            error_log("Delete Error: " . $stmt->error); // Logs error to server log
+            return false;
+        }
+    }
     
-
 //------------------------------------------------------------------------------------//
 // In Staff class
 
@@ -2751,6 +2987,109 @@ private function fetchAppointments($sql) {
     
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+    public function getRecentPriestBaptismFills() {
+        $query = "SELECT b.baptism_id AS priestbaptism, priest.fullname AS fullname, b.event_name,pa.pr_status AS checkstatus, pa.assigned_time AS c_current_time  
+        FROM baptismfill b
+        LEFT JOIN 
+priest_approval pa ON pa.approval_id = b.approval_id
+LEFT JOIN 
+citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+        WHERE YEARWEEK(pa.assigned_time, 1) = YEARWEEK(CURDATE(), 1)
+       AND pa.pr_status IN ('Approved', 'Declined') 
+        AND b.status = 'Pending'
+        AND b.role = 'Online'
+        ORDER BY pa.assigned_time DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    public function getRecentPriestConfirmationFills() {
+        $query = "SELECT cf.confirmationfill_id AS priestconfirmation,priest.fullname AS fullname, cf.event_name,pa.pr_status AS checkstatus, pa.assigned_time AS c_current_time  
+        FROM confirmationfill cf
+        LEFT JOIN 
+priest_approval pa ON pa.approval_id = cf.approval_id
+LEFT JOIN 
+citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+        WHERE YEARWEEK(pa.assigned_time, 1) = YEARWEEK(CURDATE(), 1)
+        AND pa.pr_status IN ('Approved', 'Declined') 
+        AND status = 'Pending'
+        AND role = 'Online'
+        ORDER BY pa.assigned_time DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    public function getRecentPriestDefuctomFills() {
+        $query = "SELECT df.defuctomfill_id AS priestdefuctom,priest.fullname AS fullname, df.event_name,pa.pr_status AS checkstatus, pa.assigned_time AS c_current_time  
+                   
+                  FROM defuctomfill df 
+                  LEFT JOIN 
+priest_approval pa ON pa.approval_id = df.approval_id
+LEFT JOIN 
+citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+                  WHERE YEARWEEK(pa.assigned_time, 1) = YEARWEEK(CURDATE(), 1)
+                  AND pa.pr_status IN ('Approved', 'Declined') 
+                  AND status = 'Pending'
+                  AND role = 'Online'
+                  ORDER BY pa.assigned_time DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    public function getRecentPriestMarriageFills() {
+        $query = "SELECT mf.marriagefill_id AS priestmarriage, CONCAT(mf.groom_name, ' and ', mf.bride_name) AS full_names,priest.fullname AS fullname, mf.event_name,pa.pr_status AS checkstatus,pa.assigned_time AS c_current_time  
+                  FROM marriagefill mf
+                  LEFT JOIN 
+priest_approval pa ON pa.approval_id = mf.approval_id
+LEFT JOIN 
+citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+                  WHERE YEARWEEK(pa.assigned_time, 1) = YEARWEEK(CURDATE(), 1)
+                  AND pa.pr_status IN ('Approved', 'Declined') 
+                  AND status = 'Pending'
+                  AND role = 'Online'
+                  ORDER BY pa.assigned_time DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    public function getRecentPriestRequestFormFills() {
+        $query = "SELECT rf.req_id AS requestpriest,  rf.req_person, rf.req_category,pa.assigned_time AS c_current_time,pa.pr_status AS checkstatus,priest.fullname AS fullname
+        FROM req_form rf
+             LEFT JOIN 
+priest_approval pa ON pa.approval_id = rf.approval_id
+LEFT JOIN 
+citizen priest ON pa.priest_id = priest.citizend_id AND priest.user_type = 'Priest' AND priest.r_status = 'Active'
+             WHERE YEARWEEK(pa.assigned_time, 1) = YEARWEEK(CURDATE(), 1)
+             AND pa.pr_status IN ('Approved', 'Declined') 
+             AND status = 'Pending'
+             AND role = 'Online'
+             ORDER BY pa.assigned_time DESC";
+        $result = $this->conn->query($query);
+    
+        if ($result === FALSE) {
+            die("Error: " . $this->conn->error);
+        }
+    
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
+
     
     public function getRecentConfirmationFills() {
         $query = "SELECT confirmationfill_id, fullname, event_name, c_created_at AS c_current_time  
@@ -2815,10 +3154,6 @@ private function fetchAppointments($sql) {
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function markNotificationsAsRead() {
-        $query = "UPDATE notifications SET status = 'read' WHERE status = 'unread'";
-        return $this->conn->query($query);
-    }
 
 
     public function getApprovedRegistrations() {
@@ -2911,7 +3246,28 @@ private function fetchAppointments($sql) {
         }
     }
     
-    
+    public function fetchRequestFormEvents() {
+        $query = "
+            SELECT 
+              
+                rf.req_person AS citizen_name,
+                s.date AS schedule_date,
+                s.start_time AS schedule_starttime,
+                s.end_time AS schedule_endtime,
+                rf.req_person AS Event_Name,
+                rf.status AS approval_status,
+                rf.req_id AS event_id
+            FROM 
+                schedule s
+            JOIN 
+                req_form rf ON s.schedule_id = rf.schedule_id
+            JOIN 
+                appointment_schedule a ON rf.req_id = a.request_id
+            WHERE 
+                rf.status = 'Approved';
+        ";
+        return $this->executeQuery($query);
+    }
     public function fetchMarriageEvents() {
         $query = "
             SELECT 

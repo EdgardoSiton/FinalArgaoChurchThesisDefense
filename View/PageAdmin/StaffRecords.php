@@ -81,7 +81,7 @@ if ($r_status === "Citizen") {
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title">Priest Records</h4>
+                    <h4 class="card-title">Staff Records</h4>
                 </div>
                 <!-- Dropdown Form to filter between Default and Archive -->
                 <form method="GET" action="PriestRecords.php">

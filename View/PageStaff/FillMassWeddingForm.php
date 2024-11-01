@@ -408,7 +408,7 @@ small {
                             'success'
                         ).then(() => {
                             // Redirect after approval
-                            window.location.href = 'StaffSoloSched.php';
+                            window.location.href = 'StaffMassSched.php';
                         });
                     } else {
                         console.error("Error response: ", xhr.responseText); // Log error response

@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once '../../Controller/login_con.php';
 $email = $_SESSION['email'];
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];

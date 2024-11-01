@@ -175,6 +175,11 @@ small {
     .form-control.error {
         border: 1px solid red;
     }
+    .border-error {
+    border: 1px solid red !important; /* Adding !important for higher specificity */
+    border-radius: 1px; /* Optional: for rounded corners */
+}
+
 
     </style>
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -431,7 +436,7 @@ small {
                 </option>
             <?php endforeach; ?>
         </select>
-        <span id="priestError" class="error text-danger">
+        <span class="error" id="eventTypeError"></span>
             <?php echo isset($errors['eventType']) ? $errors['eventType'] : ''; ?>
         </span>
     </div>
@@ -504,7 +509,6 @@ small {
     validateField('date', 'dateError', 'Date is required');
     validateField('start_time', 'startTimeError', 'Start Time is required');
     validateField('end_time', 'endTimeError', 'End Time is required');
-   validateField('marital_status', 'maritalStatusError', 'Marital Status Required');
     // Validate date of birth
     const month = document.getElementById('month').value;
     const day = document.getElementById('day').value;
@@ -526,16 +530,24 @@ small {
     } else {
         document.getElementById('dodError').innerText = '';
     }
- // Validate Priest Selection
- const priest = document.getElementById('eventType').value;
-    if (priest === '') {
-        document.getElementById('priestError').innerText = 'Please select a priest';
-        document.getElementById('eventType').classList.add('error');
+    function validateSelect(selectId, errorId, errorMessage) {
+    const selectElement = document.getElementById(selectId);
+    const errorElement = document.getElementById(errorId);
+    
+    if (selectElement.value === "") {
+        errorElement.textContent = errorMessage;
+        selectElement.classList.add('border-error'); // Add error border
+        console.log(`Class added to ${selectId}`); // Debugging line
         isValid = false;
     } else {
-        document.getElementById('priestError').innerText = '';
-        document.getElementById('eventType').classList.remove('error');
+        errorElement.textContent = ""; // Clear the error if a valid option is selected
+        selectElement.classList.remove('border-error'); // Remove error border
+        console.log(`Class removed from ${selectId}`); // Debugging line
     }
+}
+
+    validateSelect('eventType', 'eventTypeError', 'Please select a Priest.');
+    validateSelect('marital_status', 'maritalStatusError', 'Please select a Priest.');
 
 
     

@@ -7,85 +7,83 @@ session_start(); // Start the session
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['login_form'])) {
    
-    $email = $_POST['email'];
-    $password = $_POST['password'];
-
-
-    $user = new User($conn);
-
-    // Check if the email exists
-    $userInfo = $user->getUserInfo($email);
-    if ($userInfo) {
-        // Validate password
-        $loginResult = $user->login($email, $password);
-        if ($loginResult === true) {
-            $accountType = $userInfo['user_type'];
-            $status = $userInfo['r_status'];
-            $regId = $userInfo['citizend_id']; 
-            $nme = $userInfo['fullname'];
-            $gender = $userInfo['gender'];
-            // Store user info in session
-            $_SESSION['email'] = $email;
-            $_SESSION['user_type'] = $accountType;
-            $_SESSION['r_status'] = $status;
-            $_SESSION['citizend_id'] = $regId; 
-            $_SESSION['fullname'] = $nme;
-            $_SESSION['gender'] = $gender;
-
-            // Redirect based on the account type and status
-            if ($status === 'Approved') {
+        $email = $_POST['email'];
+        $password = $_POST['password'];
+    
+        $user = new User($conn);
+    
+        // Check if the email exists
+        $userInfo = $user->getUserInfo($email);
+        if ($userInfo) {
+            // Validate password
+            $loginResult = $user->login($email, $password);
+            if ($loginResult === true) {
+                $accountType = $userInfo['user_type'];
+                $status = $userInfo['r_status'];
+                $regId = $userInfo['citizend_id']; 
+                $nme = $userInfo['fullname'];
+                $gender = $userInfo['gender'];
+                
+                // Store user info in session
+                $_SESSION['email'] = $email;
+                $_SESSION['user_type'] = $accountType;
+                $_SESSION['r_status'] = $status;
+                $_SESSION['citizend_id'] = $regId; 
+                $_SESSION['fullname'] = $nme;
+                $_SESSION['gender'] = $gender;
+    
+                // Redirect based on the account type and status
                 if ($accountType === 'Citizen') {
-                    header('Location: ../../View/PageCitizen/CitizenPage.php');
+                    if ($status === 'Approved') {
+                        header('Location: ../../View/PageCitizen/CitizenPage.php');
+                        exit;
+                    } elseif ($status === 'Pending') {
+                        $_SESSION['login_error'] = 'Your account is pending approval. Please wait for confirmation from the management.';
+                        header('Location: ../../View/PageLanding/signin.php');
+                        exit;
+                    } else {
+                        $_SESSION['login_error'] = 'Unknown account status.';
+                        header('Location: ../../View/PageLanding/signin.php');
+                        exit;
+                    }
+                } elseif ($accountType === 'Admin') {
+                    header('Location: ../../View/PageAdmin/AdminDashboard.php');
                     exit;
+                } elseif ($accountType === 'Staff') {
+                    if ($status === 'Active') {
+                        header('Location: ../../View/PageStaff/StaffDashboard.php');
+                        exit;
+                    } else {
+                        $_SESSION['login_error'] = 'Please contact Argao Parish Church; your account is inactive.';
+                        header('Location: ../../View/PageLanding/signin.php');
+                        exit;
+                    }
+                } elseif ($accountType === 'Priest') {
+                    if ($status === 'Active') {
+                        header('Location: ../../View/PagePriest/index.php');
+                        exit;
+                    } else {
+                        $_SESSION['login_error'] = 'Please contact Argao Parish Church; your account is inactive.';
+                        header('Location: ../../View/PageLanding/signin.php');
+                        exit;
+                    }
                 } else {
                     $_SESSION['login_error'] = 'Unknown account type';
                     header('Location: ../../View/PageLanding/signin.php');
                     exit;
                 }
-            } elseif ($accountType === 'Admin') {
-                header('Location: ../../View/PageAdmin/AdminDashboard.php');
-                exit;
-            } elseif ($accountType === 'Staff') {
-                if ($status === 'Active') {
-                    header('Location: ../../View/PageStaff/StaffDashboard.php');
-                    exit;
-                } else {
-                    $_SESSION['login_error'] = 'Please Contact to ArgaoParishChurch you have been Unactive';
-                    header('Location: ../../View/PageLanding/signin.php');
-                    exit;
-                   
-                }
-               
-          
-            } elseif ($accountType === 'Priest') {
-                if ($status === 'Active') {
-                    header('Location: ../../View/PagePriest/index.php');
-                    exit;
-                } else {
-                    $_SESSION['login_error'] = 'Please Contact to ArgaoParishChurch you have been Unactive';
-                    header('Location: ../../View/PageLanding/signin.php');
-                    exit;
-                   
-                }
-             
             } else {
-                // Account not approved yet
-                $_SESSION['login_error'] = 'Waiting for approval by the management';
+                // Invalid password
+                $_SESSION['login_error'] = 'Incorrect credentials. Please try again.';
                 header('Location: ../../View/PageLanding/signin.php');
                 exit;
             }
         } else {
-            // Password incorrect
+            // Email not found
             $_SESSION['login_error'] = 'Invalid credentials';
             header('Location: ../../View/PageLanding/signin.php');
             exit;
         }
-    } else {
-        // Email not found
-        $_SESSION['login_error'] = 'Invalid credentials';
-        header('Location: ../../View/PageLanding/signin.php');
-        exit;
-    }
 } elseif (isset($_POST['signup_form'])) {
     $errors = [];
     // Assuming further validation here
@@ -97,10 +95,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $registrationResult = $registration->registerUser($registrationData);
 
         // Check if registration was successful
-        if ($registrationResult === "Registration successful and notification sent") {
-            // Redirect to success page or login page
-            $_SESSION['status'] = "success";
-            header('Location: ../../index.php');
+        if (strpos($registrationResult, "successful") !== false) {
+            // Redirect to OTP processing page
+            header('Location:../../otp_view.php'); // Adjust path as necessary
             exit();
         } else {
             // Display error message
@@ -112,7 +109,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             echo '<script>alert("' . $error . '");</script>';
         }
     }
-}elseif (isset($_POST['signup_forms'])) {
+}
+elseif (isset($_POST['signup_forms'])) {
     $errors = [];
     // Assuming further validation here
 
@@ -123,7 +121,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $registrationResult = $registration->registerUsers($registrationData);
 
         // Check if registration was successful
-        if ($registrationResult === "Registration successful and notification sent") {
+        if ($registrationResult === "Registration successful") {
             // Redirect to success page or login page
             $_SESSION['status'] = "success";
             header('Location: ../PageAdmin/AdminDashboard.php');
@@ -150,7 +148,7 @@ elseif (isset($_POST['signup_formss'])) {
         $registrationResult = $registration->registerUserss($registrationData);
 
         // Check if registration was successful
-        if ($registrationResult === "Registration successful and notification sent") {
+        if ($registrationResult === "Registration successful") {
             // Redirect to success page or login page
             $_SESSION['status'] = "success";
             header('Location: ../PageAdmin/AdminDashboard.php');

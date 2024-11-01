@@ -151,6 +151,18 @@ small {
     color: #555;
     margin-top: 5px;
 }
+.error {
+    color: red;
+    font-size: 0.875em;
+    margin-top: 0.25em;
+}
+.form-control.error {
+    border: 1px solid red;
+}
+.border-error {
+    border: 1px solid red !important; /* Adding !important for higher specificity */
+    border-radius: 1px; /* Optional: for rounded corners */
+}
 
     </style>
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -412,7 +424,7 @@ small {
     <!-- Form Actions -->
     <div class="card-action">
         <button type="submit" class="btn btn-success">Submit</button>
-        <button type="button" class="btn btn-danger" onclick="window.location.href='your_cancel_url.php'">Cancel</button>
+        <a href="javascript:history.back()" class="btn btn-danger">Cancel</a>
         <button type="button" class="btn btn-info" onclick="clearForm()">Clear</button>
     </div>
 </form>
@@ -424,7 +436,7 @@ small {
 </div>
 <?php require_once 'footer.php'?>
 <script>
- function validateFuneralForm() {
+function validateFuneralForm() {
     let isValid = true;
 
     // Helper function to validate text fields
@@ -455,6 +467,41 @@ small {
         }
     }
 
+    // Helper function to validate radio buttons
+    function validateRadio(name, errorId, message) {
+        const radios = document.getElementsByName(name);
+        let checked = false;
+        for (let i = 0; i < radios.length; i++) {
+            if (radios[i].checked) {
+                checked = true;
+                break;
+            }
+        }
+        if (!checked) {
+            document.getElementById(errorId).innerText = message;
+            isValid = false;
+        } else {
+            document.getElementById(errorId).innerText = '';
+        }
+    }
+    function validateSelect(selectId, errorId, errorMessage) {
+    const selectElement = document.getElementById(selectId);
+    const errorElement = document.getElementById(errorId);
+    
+    if (selectElement.value === "") {
+        errorElement.textContent = errorMessage;
+        selectElement.classList.add('border-error'); // Add error border
+        console.log(`Class added to ${selectId}`); // Debugging line
+        isValid = false;
+    } else {
+        errorElement.textContent = ""; // Clear the error if a valid option is selected
+        selectElement.classList.remove('border-error'); // Remove error border
+        console.log(`Class removed from ${selectId}`); // Debugging line
+    }
+}
+
+    validateSelect('marital_status', 'maritalStatusError', 'Please select a Priest.');
+
     // Clear previous error messages and styles
     document.querySelectorAll('.error').forEach(e => e.innerHTML = '');
     document.querySelectorAll('.form-control').forEach(e => e.classList.remove('error'));
@@ -471,6 +518,10 @@ small {
     validateField('date', 'dateError', 'Date is required');
     validateField('start_time', 'startTimeError', 'Start Time is required');
     validateField('end_time', 'endTimeError', 'End Time is required');
+
+
+    // Validate radio buttons
+    validateRadio('d_gender', 'genderError', 'Please select a gender.');
 
     // Validate date of birth
     const month = document.getElementById('month').value;

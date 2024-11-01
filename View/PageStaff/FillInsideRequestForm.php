@@ -341,7 +341,29 @@ if ($event_name === 'Online') {
 </div>
 
 
-    <script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+     document.addEventListener('DOMContentLoaded', function() {
+        <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'success') {
+        echo "Swal.fire({
+            icon: 'success',
+            title: ' successfully! Change',
+            text: 'Has Been Successful.',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
              document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.approve-btn').forEach(function(button) {
         button.addEventListener('click', function() {

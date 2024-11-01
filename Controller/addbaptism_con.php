@@ -2,7 +2,7 @@
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-
+session_start();
 require 'phpmailer/src/PHPMailer.php';
 require 'phpmailer/src/SMTP.php';
 require 'phpmailer/src/Exception.php';
@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($massbaptismfillId) {
         $payableAmount = $_POST['eventTitle'] ?? null;
         $citizen_id = isset($_SESSION['citizen_id']) ? $_SESSION['citizen_id'] : null;
-        $payableAmount = $contactInfo['payable_amount'];
+     
         // Ensure required fields are present
         if (!$payableAmount) {
             die('Error: Missing required form data for mass baptism.');
@@ -820,7 +820,7 @@ else if($walkinconfirmationfill_id ){
         header('Location: ../View/PageStaff/StaffDashboard.php');
         exit();
     } else {
-        $_SESSION['status'] = "failure"; // Handle the failure case
+
     }
 }
 else if ($outsiderequestform_id) {
@@ -873,7 +873,6 @@ else if ($outsiderequestform_id) {
         header('Location: ../View/PageStaff/StaffDashboard.php');
         exit();
     } else {
-        $_SESSION['status'] = "failure"; // Handle the failure case
     }
 }
  

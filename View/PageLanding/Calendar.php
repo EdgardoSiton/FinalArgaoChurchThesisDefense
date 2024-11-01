@@ -17,26 +17,37 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 
 // Check if the user is already logged in
 if (isset($_SESSION['email']) && isset($_SESSION['user_type'])) {
-    // Redirect to specific dashboard based on user type if already logged in
-    switch ($_SESSION['user_type']) {
+    // Retrieve user status from session or query it from the database, if necessary
+    $userType = $_SESSION['user_type'];
+    $r_status = $_SESSION['r_status']; // Assumes r_status is stored in session when logging in
+    
+    // Redirect based on user type and r_status
+    switch ($userType) {
         case "Staff":
-            header("Location: ../PageStaff/StaffDashboard.php");
-            exit();
+            if ($r_status === "Active") {
+                header("Location: ../PageStaff/StaffDashboard.php");
+                exit();
+            }
+            break;
         case "Citizen":
-            header("Location: ../PageCitizen/CitizenPage.php");
-            exit();
-        case "Admin":
-            header("Location: ../View/PageAdmin/AdminDashboard.php");
-            exit();
+            if ($r_status === "Approved") {
+                header("Location: ../PageCitizen/CitizenPage.php");
+                exit();
+            }
+            break;
             case "Priest":
-              header("Location: ../View/PagePriest/index.php");
-              exit();
+                if ($r_status === "Active") {
+                    header("Location: ../PagePriest/index.php");
+                    exit();
+                }
+                break;
+                case "Admin":
+                      header("Location: ../PageAdmin/AdminDashboard.php");
+                      exit();
+                  
+                  break;
     }
-}
-
-// If not logged in, show login form below this point
-$staff = new Staff($conn);
-$announcements = $staff->getAnnouncements();
+  }
 ?>
 <!DOCTYPE html>
 <html lang="en">

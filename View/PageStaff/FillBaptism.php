@@ -115,6 +115,11 @@ small {
     .form-control.error {
         border: 1px solid red;
     }
+    .border-error {
+    border: 1px solid red !important; /* Adding !important for higher specificity */
+    border-radius: 1px; /* Optional: for rounded corners */
+}
+
     </style>
     <script>
       WebFont.load({
@@ -437,18 +442,21 @@ function formatDateToYYYYMMDD(date) {
             </option>
         <?php endforeach; ?>
     </select>
+    <span class="error" id="eventTypeError"></span>
 </div>
 
 
 <div class="form-group"> 
     <label for="sundays">Select Seminar</label>
-    <select class="form-control" id="sundays" name="sundays">    
+    <select class="form-control" id="sundays" name="sundays">
+    <option value="" disabled selected>Select Seminar</option>    
     </select>
     <span class="error" id="seminarError"></span>
 </div>
 <div class="form-group">
                         <label for="eventTitle1">Seminar Speaker</label>
                         <input type="text" class="form-control" id="eventTitle1" name="eventspeaker" placeholder="Enter Amount">
+                        <span class="error" id="eventspeakerError"></span>
                     </div>
 
 <div class="form-group">
@@ -508,6 +516,23 @@ function validateForm() {
     validateField('date', 'dateError', 'Date is required');
     validateField('start_time', 'startTimeError', 'Start Time is required');
     validateField('end_time', 'endTimeError', 'End Time is required');
+    function validateSelect(selectId, errorId, errorMessage) {
+    const selectElement = document.getElementById(selectId);
+    const errorElement = document.getElementById(errorId);
+    
+    if (selectElement.value === "") {
+        errorElement.textContent = errorMessage;
+        selectElement.classList.add('border-error'); // Add error border
+        console.log(`Class added to ${selectId}`); // Debugging line
+        isValid = false;
+    } else {
+        errorElement.textContent = ""; // Clear the error if a valid option is selected
+        selectElement.classList.remove('border-error'); // Remove error border
+        console.log(`Class removed from ${selectId}`); // Debugging line
+    }
+}
+
+    validateSelect('eventType', 'eventTypeError', 'Please select a Priest.');
 
     // Validate gender
     const gender = document.querySelector('input[name="gender"]:checked');

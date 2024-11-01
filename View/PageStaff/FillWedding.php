@@ -252,9 +252,14 @@ small {
         font-size: 0.875em;
         margin-top: 0.25em;
     }
-    .form-control.error {
-        border: 1px solid red;
-    }
+    input.error, select.error, textarea.error {
+    border: 1px solid red;
+}
+    .border-error {
+    border: 1px solid red !important; /* Adding !important for higher specificity */
+    border-radius: 1px; /* Optional: for rounded corners */
+}
+
 
     </style>
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -522,7 +527,7 @@ small {
             </option>
         <?php endforeach; ?>
     </select>
-    <span class="error" id="priestError"></span>
+    <span class="error" id="eventTypeError"></span>
 </div>
 
 <div class="form-group"> 
@@ -564,10 +569,40 @@ small {
     document.querySelectorAll('.error').forEach(function (el) {
         el.innerText = '';
     });
+    function validateSelect(selectId, errorId, errorMessage) {
+    const selectElement = document.getElementById(selectId);
+    const errorElement = document.getElementById(errorId);
+    let isValid = true; // Initialize isValid to true
+
+    if (selectElement.value === "") {
+        errorElement.textContent = errorMessage;
+        selectElement.classList.add('border-error'); // Add error border
+        console.log(`Class added to ${selectId}`); // Debugging line
+        isValid = false; // Set isValid to false if there's an error
+    } else {
+        errorElement.textContent = ""; // Clear the error if a valid option is selected
+        selectElement.classList.remove('border-error'); // Remove error border
+        console.log(`Class removed from ${selectId}`); // Debugging line
+    }
+
+    return isValid; // Return the validity status
+}
+
+// Validate each select element
+const isEventTypeValid = validateSelect('eventType', 'eventTypeError', 'Please select a Priest.');
+const isBridePreviouslyMarriedValid = validateSelect('bride_previously_married', 'bridePreviouslyMarriedError', 'Please specify if the bride was previously married.');
+const isGroomPreviouslyMarriedValid = validateSelect('groom_previously_married', 'groomPreviouslyMarriedError', 'Please specify if the groom was previously married.');
+
+// You can combine the results if needed
+const allValid = isEventTypeValid && isBridePreviouslyMarriedValid && isGroomPreviouslyMarriedValid;
+
+
+    validateSelect('eventType', 'eventTypeError', 'Please select a Priest.');
 
     function isEmptyOrWhitespace(value) {
         return value.trim() === '';
     }
+    
     var fields = [
         { id: 'date', errorId: 'dateError', name: 'Date' },
         { id: 'firstname', errorId: 'firstnameError', name: 'Firstname of Groom' },
@@ -576,24 +611,30 @@ small {
         { id: 'groom_citizenship', errorId: 'groomCitizenshipError', name: 'Groom Citizenship' },
         { id: 'parents_residence', errorId: 'groomAddressError', name: 'Groom Address' },
         { id: 'groom_religion', errorId: 'groomReligionError', name: 'Groom Religion' },
-        { id: 'groom_previously_married', errorId: 'groomPreviouslyMarriedError', name: 'Groom Previously Married' },
+       
         { id: 'firstnames', errorId: 'brideFirstnameError', name: 'Firstname of Bride' },
         { id: 'lastnames', errorId: 'brideLastnameError', name: 'Lastname of Bride' },
        
         { id: 'bride_citizenship', errorId: 'brideCitizenshipError', name: 'Bride Citizenship' },
         { id: 'bride_religion', errorId: 'brideReligionError', name: 'Bride Religion' },
-        { id: 'bride_previously_married', errorId: 'bridePreviouslyMarriedError', name: 'Bride Previously Married' },
+      
         { id: 'bride_address', errorId: 'brideAddressError', name: 'Bride Address' },
         { id: 'bride_place_of_birth', errorId: 'bridePlaceOfBirthError', name: 'Bride Place of Birth' }
     ];
 
     fields.forEach(function(field) {
-        var value = document.getElementById(field.id).value;
-        if (isEmptyOrWhitespace(value)) {
-            document.getElementById(field.errorId).innerText = field.name + ' is required and cannot be just spaces.';
-            isValid = false;
-        }
-    });
+    var element = document.getElementById(field.id);
+    var value = element.value;
+    if (isEmptyOrWhitespace(value)) {
+        document.getElementById(field.errorId).innerText = field.name + ' is required and cannot be just spaces.';
+        element.classList.add('form-control', 'error'); // Add both classes
+        isValid = false;
+    } else {
+        document.getElementById(field.errorId).innerText = '';
+        element.classList.remove('error');
+    }
+});
+
     var groomDob = {
         month: document.getElementById('month').value,
         day: document.getElementById('day').value,
@@ -625,15 +666,6 @@ if (seminar === '' || seminar === null) {
     document.getElementById('saturdays').classList.remove('error');
 }
 
-const priest = document.getElementById('eventType').value;
-if (priest === '' || priest === null) {
-    document.getElementById('priestError').innerText = 'Please select a priest';
-    document.getElementById('eventType').classList.add('error');
-    isValid = false;
-} else {
-    document.getElementById('priestError').innerText = '';
-    document.getElementById('eventType').classList.remove('error');
-}
 
     
  const payAmount = document.getElementById('pay_amount').value;

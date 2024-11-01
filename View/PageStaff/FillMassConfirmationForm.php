@@ -12,6 +12,7 @@ $email = $_SESSION['email'];
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
 $confirmationfill_id = $_GET['id'] ?? '';
+$confirmationfill_idss = $_GET['id'] ?? '';
 // Get citizen ID from the URL
 $citizenId = isset($_GET['id']) ? intval($_GET['id']) : null;
 $loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
@@ -355,7 +356,7 @@ small {
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.decline-btn').addEventListener('click', function() {
-        var confirmationfill_id = this.getAttribute('data-id');
+        var confirmationfill_idss = this.getAttribute('data-id');
        
 
         Swal.fire({
@@ -379,7 +380,7 @@ small {
                             'success'
                         ).then(() => {
                             // Redirect after approval
-                            window.location.href = 'StaffSoloSched.php';
+                            window.location.href = 'StaffMassSched.php';
                         });
                     } else {
                         console.error("Error response: ", xhr.responseText); // Log error response
@@ -392,7 +393,7 @@ small {
                 };
 
                 // Send both baptismfill_id and citizen_id
-                xhr.send('confirmationfill_id=' + encodeURIComponent(confirmationfill_id));
+                xhr.send('confirmationfill_idss=' + encodeURIComponent(confirmationfill_idss));
             }
         });
     });

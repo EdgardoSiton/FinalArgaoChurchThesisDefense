@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../Model/db_connection.php';
 require_once __DIR__ . '/../Model/staff_mod.php'; 
-
+session_start();
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
@@ -55,6 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Check if the insertion was successful
             if ($announcementResult) {
                 // Redirect to a success page or display success message
+                $_SESSION['status'] = "success";
                 header('Location: ../View/PageStaff/StaffAnnouncement.php');
                 exit();
             } else {

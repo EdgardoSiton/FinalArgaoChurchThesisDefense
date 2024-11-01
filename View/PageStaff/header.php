@@ -9,7 +9,12 @@ $recentConfirmationFills = $userManager->getRecentConfirmationFills();
 $recentDefuctomFills = $userManager-> getRecentDefuctomFills();
 $recentMarriageFills = $userManager-> getRecentMarriageFills();
 $recentRequestFormFills = $userManager->getRecentRequestFormFills();
-$allUpdates = array_merge($recentCitizenUpdates, $recentBaptismFills,$recentConfirmationFills,$recentDefuctomFills,$recentMarriageFills,$recentRequestFormFills); // Combine both arrays
+$recentPriestBaptismFormFills = $userManager->getRecentPriestBaptismFills();
+$recentPriestConfirmationFormFills = $userManager->getRecentPriestConfirmationFills();
+$recentPriestDefuctomFormFills = $userManager->getRecentPriestDefuctomFills();
+$recentPriestMarriageFills = $userManager->getRecentPriestMarriageFills();
+$recentPriestRequestFormFills = $userManager->getRecentPriestRequestFormFills();
+$allUpdates = array_merge($recentCitizenUpdates, $recentBaptismFills,$recentConfirmationFills,$recentDefuctomFills,$recentMarriageFills,$recentRequestFormFills,$recentPriestBaptismFormFills,$recentPriestConfirmationFormFills,$recentPriestDefuctomFormFills,$recentPriestMarriageFills,$recentPriestRequestFormFills); // Combine both arrays
 $updatesCount = count($allUpdates);
 $loggedInUserEmail = isset($_SESSION['email']) ? $_SESSION['email'] : null;
 $r_status = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : null;
@@ -208,7 +213,7 @@ if ($r_status === "Admin") {
                     echo '<a href="StaffMassSched.php">' . htmlspecialchars($update['fullname']) . ' - New Mass Confirmation Fill-up Information </a>';
                 }
             } else if (isset($update['defuctomfill_id'])) {
-                echo '<a href="DefuctomFillPage.php">' . htmlspecialchars($update['d_fullname']) . ' - New Defuctom Fill-up Information </a>';
+                echo '<a href="DefuctomFillPage.php">' . htmlspecialchars($update['fullname']) . ' - New Defuctom Fill-up Information </a>';
             } else if (isset($update['marriagefill_id'])) {
                 if (isset($update['event_name']) && $update['event_name'] === 'Marriage') {
                     echo '<a href="MarriageFillPage.php">' . htmlspecialchars($update['full_names']) . ' - New Marriage Fill-up Information </a>';
@@ -219,6 +224,33 @@ if ($r_status === "Admin") {
               $category = htmlspecialchars($update['req_category']); // Sanitize req_category
               echo '<a href="StaffRequestSchedule.php">' . htmlspecialchars($update['req_person']) . ' - New ' . $category . ' Fill-up Information </a>';
           }
+          else if (isset($update['priestbaptism'])) {
+            $checkstatus = htmlspecialchars($update['checkstatus']); // Sanitize req_category
+            if (isset($update['event_name']) && $update['event_name'] === 'Baptism') {
+                echo '<a href="StaffSoloSched.php">' . htmlspecialchars($update['fullname']) . ' - Has Been '  . $checkstatus . ' Baptism Appointment Come and Check it  </a>';
+            } 
+        }   else if (isset($update['priestconfirmation'])) {
+          $checkstatus = htmlspecialchars($update['checkstatus']); // Sanitize req_category
+          if (isset($update['event_name']) && $update['event_name'] === 'Confirmation') {
+              echo '<a href="StaffSoloSched.php">' . htmlspecialchars($update['fullname']) . ' - Has Been '  . $checkstatus . ' Confirmation Appointment Come and Check it  </a>';
+          } 
+      }
+      else if (isset($update['priestdefuctom'])) {
+        $checkstatus = htmlspecialchars($update['checkstatus']); // Sanitize req_category
+        if (isset($update['event_name']) && $update['event_name'] === 'Funeral') {
+            echo '<a href="StaffSoloSched.php">' . htmlspecialchars($update['fullname']) . ' - Has Been '  . $checkstatus . ' Funeral Appointment Come and Check it  </a>';
+        } 
+    }
+    else if (isset($update['priestmarriage'])) {
+      $checkstatus = htmlspecialchars($update['checkstatus']); // Sanitize req_category
+      if (isset($update['event_name']) && $update['event_name'] === 'Wedding') {
+          echo '<a href="StaffSoloSched.php">' . htmlspecialchars($update['fullname']) . ' - Has Been '  . $checkstatus . ' Wedding Appointment Come and Check it  </a>';
+      } 
+  }else if (isset($update['requestpriest'])) {
+    $checkstatus = htmlspecialchars($update['checkstatus']); // Sanitize req_category
+    $category = htmlspecialchars($update['req_category']); // Sanitize req_category
+    echo '<a href="StaffRequestSchedule.php">' . htmlspecialchars($update['fullname']) . ' - Has Been '  . $checkstatus .  $category. ' RequestForm Appointment Come and Check it  </a>';
+}
            else {
                 echo "Unknown update";
             }

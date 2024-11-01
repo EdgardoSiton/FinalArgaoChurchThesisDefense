@@ -99,6 +99,11 @@ small {
     .form-control.error {
         border: 1px solid red;
     }
+    .border-error {
+    border: 1px solid red !important; /* Adding !important for higher specificity */
+    border-radius: 1px; /* Optional: for rounded corners */
+}
+
     </style>
     <script>
       WebFont.load({
@@ -293,108 +298,114 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="card-body">
                     <form method="post" action="../../Controller/addannounce_con.php" onsubmit="return validateForm()">
-                    
-    <input type="hidden" name="announcement" name="announcement" value="announcement">
+    <input type="hidden" name="announcement" value="announcement">
     <div class="row">
         <div class="col-md-6 col-lg-4">
-        <div class="form-group">
-    <label for="date">Date</label>
-    <input type="text" class="form-control" id="date" name="date" placeholder="Select a date" readonly />
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="text" class="form-control" id="date" name="date" placeholder="Select a date" readonly />
+                <span class="error" id="dateError"></span>
+            </div>
 
+            <div class="form-group">
+                <label for="eventTitle">Event Title</label>
+                <input type="text" class="form-control" id="eventTitle" name="eventTitle" placeholder="Enter title">
+                <span class="error" id="eventTitleError"></span>
+            </div>
 
-    <span class="error" id="dateError"></span>
-</div>
+            <div class="form-group">
+                <label for="capacity">Capacity</label>
+                <input type="number" class="form-control" id="capacity" name="capacity" placeholder="Enter capacity">
+                <span class="error" id="capacityError"></span>
+            </div>
+        </div>
 
-<div class="form-group">
-            <label for="eventTitle">Event Title</label>
-            <input type="text" class="form-control" id="eventTitle" name="eventTitle" placeholder="Enter title">
-        </div>
-           
-        
-        <div class="form-group">
-            <label for="capacity">Capacity</label>
-            <input type="number" class="form-control" id="capacity" name="capacity" placeholder="Enter capacity">
-        </div>
-            
-        </div>
         <div class="col-md-6 col-lg-4">
             <div class="form-group">
                 <label for="start_time">Start Time</label>
-                <input type="text" class="form-control" id="start_time" name="start_time" placeholder="Start Time" readonly>    
-                 <span class="error" id="startTimeError"></span>
+                <input type="text" class="form-control" id="start_time" name="start_time" placeholder="Start Time" readonly>
+                <span class="error" id="startTimeError"></span>
             </div>
             <div class="form-group">
-            <label for="eventType">Event Type</label>
-            <select class="form-control" id="eventType" name="eventType" >
-                <option value="" disabled selected>Select Event</option>
-                <option value="MassBaptism">Mass Baptism</option>
-                <option value="MassMarriage">Mass Marriage</option>
-                <option value="MassConfirmation">Mass Confirmation</option>
-            </select>
+                <label for="eventType">Event Type</label>
+                <select class="form-control" id="eventType" name="eventType">
+                    <option value="" disabled selected>Select Event</option>
+                    <option value="MassBaptism">Mass Baptism</option>
+                    <option value="MassMarriage">Mass Marriage</option>
+                    <option value="MassConfirmation">Mass Confirmation</option>
+                </select>
+                <span class="error" id="eventTypeError"></span>
+            </div>
         </div>
-            
-         
-           
-        </div>
+
         <div class="col-md-6 col-lg-4">
             <div class="form-group">
                 <label for="end_time">End Time</label>
-                <input type="text" class="form-control" id="end_time" name="end_time" placeholder="End Time" readonly>        <span class="error" id="endTimeError"></span>
+                <input type="text" class="form-control" id="end_time" name="end_time" placeholder="End Time" readonly>
+                <span class="error" id="endTimeError"></span>
             </div>
             <div class="form-group">
-            <label for="description">Description</label>
-            <input type="text" class="form-control" id="description" name="description" placeholder="Enter description">
-        </div>
-           
-           
+                <label for="description">Description</label>
+                <input type="text" class="form-control" id="description" name="description" placeholder="Enter description">
+                <span class="error" id="descriptionError"></span>
+            </div>
         </div>
     </div>
+
     <div class="card-action">
-    <div class="card-header">
-                        <div class="card-title">Priest</div>
-                    </div>
-    <div class="col-md-6 col-lg-4">
-    <div class="form-group">
-    <label for="dates">Select Seminar</label>
-    <input type="date" class="form-control" id="dates" name="dates" placeholder="Enter description">
-</div>
-<div class="form-group">
-    <label for="start_times">Select Start Time</label>
-    <select class="form-control" id="start_times" name="start_times">
-        <!-- Time options will be added by JavaScript -->
-    </select>
-</div>
+        <div class="card-header">
+            <div class="card-title">Priest</div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+            <div class="form-group">
+                <label for="dates">Select Seminar</label>
+                <input type="date" class="form-control" id="dates" name="dates">
+                <span class="error" id="seminarError"></span>
+            </div>
+            <div class="form-group">
+                <label for="start_times">Select Start Time</label>
+                <select class="form-control" id="start_times" name="start_times">
+                    <!-- Time options will be added by JavaScript -->
+                </select>
+                <span class="error" id="startTimesError"></span>
+            </div>
 
-<div class="form-group">
-    <label for="end_times">Select End Time</label>
-    <select class="form-control" id="end_times" name="end_times">
-        <!-- Time options will be added by JavaScript -->
-    </select>
-</div>
-<div class="form-group">
-                        <label for="eventTitle1">Seminar Speaker</label>
-                        <input type="text" class="form-control" id="eventTitle1" name="eventspeaker" placeholder="Enter Amount">
-                    </div>
+            <div class="form-group">
+                <label for="end_times">Select End Time</label>
+                <select class="form-control" id="end_times" name="end_times">
+                    <!-- Time options will be added by JavaScript -->
+                </select>
+                <span class="error" id="endTimesError"></span>
+            </div>
 
+            <div class="form-group">
+                <label for="eventTitle1">Seminar Speaker</label>
+                <input type="text" class="form-control" id="eventTitle1" name="eventspeaker" placeholder="Enter Amount">
+                <span class="error" id="speakerError"></span>
+            </div>
 
-    <div class="form-group">
-    <label for="eventType">Select Priest</label>
-    <select class="form-control" id="eventType" name="priest_id">
-        <option value="" disabled selected>Select Priest</option>
-        <?php foreach ($priests as $priest): ?>
-            <option value="<?php echo htmlspecialchars($priest['citizend_id']); ?>">
-                <?php echo htmlspecialchars($priest['fullname']); ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-    <span class="error" id="priestError"></span>
-</div>
-    <div class="card-action">
-        <button type="submit" class="btn btn-success">Submit</button>
-        <button type="button" class="btn btn-danger" onclick="window.location.href='your_cancel_url.php'">Cancel</button>
-        <button type="button" class="btn btn-info" onclick="clearForm()">Clear</button>
+            <div class="form-group">
+                <label for="priest_id">Select Priest</label>
+                <select class="form-control" id="priest_id" name="priest_id">
+                    <option value="" disabled selected>Select Priest</option>
+                    <?php foreach ($priests as $priest): ?>
+                        <option value="<?php echo htmlspecialchars($priest['citizend_id']); ?>">
+                            <?php echo htmlspecialchars($priest['fullname']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <span class="error" id="priestError"></span>
+            </div>
+
+            <div class="card-action">
+                <button type="submit" class="btn btn-success">Submit</button>
+                <button type="button" class="btn btn-danger" onclick="window.location.href='your_cancel_url.php'">Cancel</button>
+                <button type="button" class="btn btn-info" onclick="clearForm()">Clear</button>
+            </div>
+        </div>
     </div>
 </form>
+
                     </div>
                 </div>
             </div>
@@ -403,11 +414,14 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 <script>
     
-
-function validateForm() {
+    function validateForm() {
     let isValid = true;
 
-    // Helper function to validate field
+    // Clear previous error messages and styles
+    document.querySelectorAll('.error').forEach(e => e.innerHTML = '');
+    document.querySelectorAll('.form-control').forEach(e => e.classList.remove('error'));
+
+    // Helper function to validate fields
     function validateField(id, errorId, message) {
         const field = document.getElementById(id);
         const value = field.value.trim();
@@ -415,90 +429,48 @@ function validateForm() {
             document.getElementById(errorId).innerText = message;
             field.classList.add('error');
             isValid = false;
-        } else {
-            document.getElementById(errorId).innerText = '';
-            field.classList.remove('error');
         }
     }
 
-    // Clear previous error messages and styles
-    document.querySelectorAll('.error').forEach(e => e.innerHTML = '');
-    document.querySelectorAll('.form-control').forEach(e => e.classList.remove('error'));
+    // Validate each field
+    validateField('date', 'dateError', 'Date is required.');
+    validateField('eventTitle', 'eventTitleError', 'Event Title is required.');
+    validateField('capacity', 'capacityError', 'Capacity is required.');
+    validateField('start_time', 'startTimeError', 'Start Time is required.');
+    validateField('end_time', 'endTimeError', 'End Time is required.');
+    validateField('description', 'descriptionError', 'Description is required.');
+    validateField('dates', 'seminarError', 'Seminar date is required.');
+    validateField('start_times', 'startTimesError', 'Start Time is required.');
+    validateField('end_times', 'endTimesError', 'End Time is required.');
+    validateField('eventTitle1', 'speakerError', 'Seminar Speaker is required.');
 
-    // Validate fields
-    validateField('firstname', 'firstnameError', 'Firstname is required');
-    validateField('lastname', 'lastnameError', 'Lastname is required');
-    validateField('address', 'addressError', 'Address is required');
-    validateField('religion', 'religionError', 'Religion is required');
-    validateField('pbirth', 'pbirthError', 'Place of Birth is required');
-    validateField('father_name', 'fatherNameError', 'Father\'s Fullname is required');
-    validateField('mother_name', 'motherNameError', 'Mother\'s Fullname is required');
-    validateField('parents_residence', 'parentsResidenceError', 'Parents Residence is required');
-    validateField('godparents', 'godparentsError', 'List Of Godparents is required');
-    validateField('date', 'dateError', 'Date is required');
-    validateField('start_time', 'startTimeError', 'Start Time is required');
-    validateField('end_time', 'endTimeError', 'End Time is required');
-
-    // Validate gender
-    const gender = document.querySelector('input[name="gender"]:checked');
-    if (!gender) {
-        document.getElementById('genderError').innerText = 'Gender is required';
-        document.querySelector('input[name="gender"]').classList.add('error');
-        isValid = false;
-    } else {
-        document.getElementById('genderError').innerText = '';
-        document.querySelector('input[name="gender"]').classList.remove('error');
-    }
-
-    // Validate date of birth
-    const month = document.getElementById('months').value;
-    const day = document.getElementById('days').value;
-    const year = document.getElementById('years').value;
-    if (month === '' || day === '' || year === '') {
-        document.getElementById('dobError').innerText = 'Date of birth is required';
-        isValid = false;
-    } else {
-        document.getElementById('dobError').innerText = '';
-    }
-    const seminar = document.getElementById('sundays').value;
-    if (seminar === '') {
-        document.getElementById('seminarError').innerText = 'Please select a seminar';
-        document.getElementById('sundays').classList.add('error');
-        isValid = false;
-    } else {
-        document.getElementById('seminarError').innerText = '';
-        document.getElementById('sundays').classList.remove('error');
-    }
-    const priest = document.getElementById('eventType').value;
-    if (priest === '') {
-        document.getElementById('priestError').innerText = 'Please select a priest';
-        document.getElementById('eventType').classList.add('error');
-        isValid = false;
-    } else {
-        document.getElementById('priestError').innerText = '';
-        document.getElementById('eventType').classList.remove('error');
-    }
-
+    function validateSelect(selectId, errorId, errorMessage) {
+    const selectElement = document.getElementById(selectId);
+    const errorElement = document.getElementById(errorId);
     
- const payAmount = document.getElementById('pay_amount').value;
-    if (payAmount === '' || isNaN(payAmount) || payAmount <= 0) {
-        document.getElementById('payAmountError').innerText = 'Please enter a valid payable amount';
-        document.getElementById('pay_amount').classList.add('error');
+    if (selectElement.value === "") {
+        errorElement.textContent = errorMessage;
+        selectElement.classList.add('border-error'); // Add error border
+        console.log(`Class added to ${selectId}`); // Debugging line
         isValid = false;
     } else {
-        document.getElementById('payAmountError').innerText = '';
-        document.getElementById('pay_amount').classList.remove('error');
+        errorElement.textContent = ""; // Clear the error if a valid option is selected
+        selectElement.classList.remove('border-error'); // Remove error border
+        console.log(`Class removed from ${selectId}`); // Debugging line
     }
-    // Check if the form is valid
+}
+validateSelect('priest_id', 'priestError', 'Please select a Priest.');
+validateSelect('eventType', 'eventTypeError', 'Please select a Event.');
+  
+
     if (!isValid) {
         console.log('Validation failed, form not submitted.');
-        return false;  // Prevent form submission
+        return false; // Prevent form submission
     }
 
     console.log('Validation passed, form will be submitted.');
-    return true;  // Allow form submission
+    return true; // Allow form submission
 }
-
 </script>
 
 

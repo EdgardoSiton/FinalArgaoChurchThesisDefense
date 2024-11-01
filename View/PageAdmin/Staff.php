@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once '../../Controller/login_con.php';
 $email = $_SESSION['email'];
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
@@ -139,7 +139,7 @@ small {
                     <div class="card-body">
                     <form method="POST" action=""  enctype="multipart/form-data" onsubmit="return validateForm()"class="sign-up-form">
                     
-                    <input type="hidden" name="signup_formss" value="1">
+                    <input type="hidden" name="signup_formss" value="3">
     <div class="row">
         <div class="col-md-6 col-lg-4">
 
@@ -248,7 +248,7 @@ small {
     </div>
 
     <div class="card-action">
-    <button type="submit" class="btn btn-success" >Register</button>
+    <button type="submit" class="button" >Register</button>
           </div>
 </form>
                     </div>

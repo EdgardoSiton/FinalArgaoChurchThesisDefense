@@ -278,6 +278,7 @@ function toggleChapelInput() {
             </option>
         <?php endforeach; ?>
     </select>
+    <span class="error" id="eventTypeError"></span>
 </div> 
 <div class="form-group">
     <label for="pay_amount">Payable Amount</label>
@@ -341,7 +342,24 @@ function toggleChapelInput() {
   
     validateField('chapel', 'chapelError', 'Chapel is required');
     validateField('datetofollowup', 'dobError', 'Date must required');
+    validateField('pay_amount', 'payAmountError', 'Payment must required');
+    function validateSelect(selectId, errorId, errorMessage) {
+    const selectElement = document.getElementById(selectId);
+    const errorElement = document.getElementById(errorId);
+    
+    if (selectElement.value === "") {
+        errorElement.textContent = errorMessage;
+        selectElement.classList.add('border-error'); // Add error border
+        console.log(`Class added to ${selectId}`); // Debugging line
+        isValid = false;
+    } else {
+        errorElement.textContent = ""; // Clear the error if a valid option is selected
+        selectElement.classList.remove('border-error'); // Remove error border
+        console.log(`Class removed from ${selectId}`); // Debugging line
+    }
+}
 
+    validateSelect('eventType', 'eventTypeError', 'Please select a Priest.');
     // Validate contact number specifically
     const cpnumberInput = document.getElementById('cpnumber');
     const cpnumberValue = cpnumberInput.value.trim();
@@ -416,6 +434,11 @@ function toggleChapelInput() {
     .form-control.error {
         border: 1px solid red;
     }
+    .border-error {
+    border: 1px solid red !important; /* Adding !important for higher specificity */
+    border-radius: 1px; /* Optional: for rounded corners */
+}
+
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"
