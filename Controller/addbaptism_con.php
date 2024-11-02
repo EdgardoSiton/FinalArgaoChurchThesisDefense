@@ -32,16 +32,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
     if ($baptismfill_id) {
-    $sunday = $start_time = $end_time = $priestId = $payableAmount = null;
+        $sunday = $start_time = $end_time = $priestId = $payableAmount = null;
+
         if (isset($_POST['sundays'])) {
             $selected_sunday = explode('|', $_POST['sundays']);
             if (count($selected_sunday) === 4) {
                 list($schedule_id, $sunday, $start_time, $end_time) = $selected_sunday;
+        
+                // Convert start_time and end_time to 24-hour format
+                $start_time = (new DateTime($start_time))->format('H:i:s');
+                $end_time = (new DateTime($end_time))->format('H:i:s');
+                
+                // Now $start_time and $end_time are in 24-hour format
             } else {
                 die('Error: Expected 4 values, but received fewer.');
             }
         }
-
+        
  
         $payableAmount = $_POST['eventTitle'] ?? null;
         $eventspeaker = $_POST['eventspeaker'] ?? null;
@@ -65,7 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $citizen_name = $contactInfo['fullname'];
                 $title = $contactInfo['event_name'];
                 $phone = $contactInfo['phone'];  // Assuming this is the phone number
-               
+                $seminar_date = (new DateTime($contactInfo['seminar_date']))->format('F j, Y');
+                    $seminar_start_time = (new DateTime($contactInfo['seminar_start_time']))->format('g:i A');
+                    $seminar_end_time = (new DateTime($contactInfo['seminar_end_time']))->format('g:i A');
             
                 // Send email
                 try {
@@ -86,11 +95,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $mail->Subject = "Appointment Schedule Confirmation";
                     $mail->Body = "
                     <div style='width: 100%; max-width: 400px; margin: auto; background: url(cid:background_img) no-repeat center center; background-size: cover; padding: 20px;'>
-                        <div style='background: rgba(255, 255, 255, 0.8); padding: 20px;width:100%;height:auto;'>
-                            Dear {$citizen_name},<br><br>Your appointment schedule for '{$title}' has been confirmed. ₱{$payableAmount}.00<br>Please make sure to pay the said amount in the church office on the day of your appointment.<br><br>Thank you.<br>
-                            <img src='cid:signature_img' style='width: 200px; height: auto;'>
-                        </div>
-                    </div>";
+                            <div style='background: rgba(255, 255, 255, 0.8); padding: 20px; width:100%; height:auto;'>
+                                Dear {$citizen_name},<br><br>
+                                We are pleased to confirm your appointment for the event titled '<strong>{$title}</strong>'.<br><br>
+                                <strong>Details of Your Seminar Schedule:</strong><br>
+                                <ul>
+                                    <li><strong>Date:</strong> {$seminar_date}</li>
+                                    <li><strong>Time:</strong> {$seminar_start_time} to {$seminar_end_time}</li>
+                                    <li><strong>Amount Due:</strong> ₱{$payableAmount}.00</li>
+                                </ul>
+                                Please ensure to complete the payment at the church office on or before the day of your appointment or your Seminar.<br><br>
+                                We look forward to your participation and thank you for choosing Argao Parish Church.<br><br>
+                                Best regards,<br>
+                                <img src='cid:signature_img' style='width: 200px; height: auto;'>
+                            </div>
+                        </div>";
             
                     if ($mail->send()) {
                         echo "Email notification sent successfully.";
@@ -111,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $phone, // The recipient's phone number
                         [
                             'from' => '+17082776875', // Your Twilio phone number
-                            'body' => "Dear {$citizen_name}, your appointment for '{$title}' has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
+                            'body' => "Dear {$citizen_name}, your appointment for '{$title}' on {$seminar_date} from {$seminar_start_time} to {$seminar_end_time} has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
                         ]
                     );
                 
@@ -165,7 +184,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $citizen_name = $contactInfo['fullname'];
                 $title = $contactInfo['event_name'];
                 $phone = $contactInfo['phone'];
-              
+                $seminar_date = (new DateTime($contactInfo['seminar_date']))->format('F j, Y');
+                $seminar_start_time = (new DateTime($contactInfo['seminar_start_time']))->format('g:i A');
+                $seminar_end_time = (new DateTime($contactInfo['seminar_end_time']))->format('g:i A');
     
                 try {
                     // Set up PHPMailer
@@ -186,11 +207,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $mail->Subject = "Mass Baptism Schedule Confirmation";
                     $mail->Body = "
                     <div style='width: 100%; max-width: 400px; margin: auto; background: url(cid:background_img) no-repeat center center; background-size: cover; padding: 20px;'>
-                        <div style='background: rgba(255, 255, 255, 0.8); padding: 20px;width:100%;height:auto;'>
-                            Dear {$citizen_name},<br><br>Your mass baptism schedule for '{$title}' has been confirmed. ₱{$payableAmount}.00<br>Please make sure to pay the said amount in the church office on the day of your appointment.<br><br>Thank you.<br>
-                            <img src='cid:signature_img' style='width: 200px; height: auto;'>
-                        </div>
-                    </div>";
+                            <div style='background: rgba(255, 255, 255, 0.8); padding: 20px; width:100%; height:auto;'>
+                                Dear {$citizen_name},<br><br>
+                                We are pleased to confirm your appointment for the event titled '<strong>{$title}</strong>'.<br><br>
+                                <strong>Details of Your Seminar Schedule:</strong><br>
+                                <ul>
+                                    <li><strong>Date:</strong> {$seminar_date}</li>
+                                    <li><strong>Time:</strong> {$seminar_start_time} to {$seminar_end_time}</li>
+                                    <li><strong>Amount Due:</strong> ₱{$payableAmount}.00</li>
+                                </ul>
+                                Please ensure to complete the payment at the church office on or before the day of your appointment or your Seminar.<br><br>
+                                We look forward to your participation and thank you for choosing Argao Parish Church.<br><br>
+                                Best regards,<br>
+                                <img src='cid:signature_img' style='width: 200px; height: auto;'>
+                            </div>
+                        </div>";
     
                     if ($mail->send()) {
                         echo "Email notification sent successfully.";
@@ -211,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $phone, // The recipient's phone number
                         [
                             'from' => '+17082776875', // Your Twilio phone number
-                            'body' => "Dear {$citizen_name}, your appointment for '{$title}' has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
+                            'body' => "Dear {$citizen_name}, your appointment for '{$title}' on {$seminar_date} from {$seminar_start_time} to {$seminar_end_time} has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
                         ]
                     );
     
@@ -242,13 +273,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $sunday = $selected_sunday[1];
                 $start_time = $selected_sunday[2];
                 $end_time = $selected_sunday[3];
+        
+                // Convert start_time and end_time to 24-hour (military) format
+                $start_time = (new DateTime($start_time))->format('H:i:s');
+                $end_time = (new DateTime($end_time))->format('H:i:s');
+                
+                // Now $start_time and $end_time are in 24-hour format
             } else {
                 die("Error: Expected 4 values for sundays.");
             }
         } else {
             die("Error: No sundays data provided.");
         }
-
+        
        
         $payableAmount = $_POST['eventTitle']; 
         $eventspeaker = $_POST['eventspeaker'] ?? null;
@@ -272,7 +309,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $email = $contactInfo['email'];
                     $citizen_name = $contactInfo['fullname'];
                     $title = $contactInfo['event_name'];
-                    $phone = $contactInfo['phone'];  // Assuming this is the phone number
+                    $phone = $contactInfo['phone'];
+                    $seminar_date = (new DateTime($contactInfo['seminar_date']))->format('F j, Y');
+                    $seminar_start_time = (new DateTime($contactInfo['seminar_start_time']))->format('g:i A');
+                    $seminar_end_time = (new DateTime($contactInfo['seminar_end_time']))->format('g:i A');
+                      // Assuming this is the phone number
                     try {
                         $mail = new PHPMailer(true);
                         $mail->isSMTP();
@@ -291,8 +332,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $mail->Subject = "Appointment Schedule Confirmation";
                         $mail->Body = "
                         <div style='width: 100%; max-width: 400px; margin: auto; background: url(cid:background_img) no-repeat center center; background-size: cover; padding: 20px;'>
-                            <div style='background: rgba(255, 255, 255, 0.8); padding: 20px;width:100%;height:auto;'>
-                                Dear {$citizen_name},<br><br>Your appointment schedule for '{$title}' has been confirmed. ₱{$payableAmount}.00<br>Please make sure to pay the said amount in the church office on the day of your appointment.<br><br>Thank you.<br>
+                            <div style='background: rgba(255, 255, 255, 0.8); padding: 20px; width:100%; height:auto;'>
+                                Dear {$citizen_name},<br><br>
+                                We are pleased to confirm your appointment for the event titled '<strong>{$title}</strong>'.<br><br>
+                                <strong>Details of Your Seminar Schedule:</strong><br>
+                                <ul>
+                                    <li><strong>Date:</strong> {$seminar_date}</li>
+                                    <li><strong>Time:</strong> {$seminar_start_time} to {$seminar_end_time}</li>
+                                    <li><strong>Amount Due:</strong> ₱{$payableAmount}.00</li>
+                                </ul>
+                                Please ensure to complete the payment at the church office on or before the day of your appointment or your Seminar.<br><br>
+                                We look forward to your participation and thank you for choosing Argao Parish Church.<br><br>
+                                Best regards,<br>
                                 <img src='cid:signature_img' style='width: 200px; height: auto;'>
                             </div>
                         </div>";
@@ -314,7 +365,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $phone, // The recipient's phone number
                             [
                                 'from' => '+17082776875', // Your Twilio phone number
-                                'body' => "Dear {$citizen_name}, your appointment for '{$title}' has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
+                                'body' => "Dear {$citizen_name}, your appointment for '{$title}' on {$seminar_date} from {$seminar_start_time} to {$seminar_end_time} has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
                             ]
                         );
                     
@@ -365,6 +416,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $citizen_name = $contactInfo['fullname'];
             $title = $contactInfo['event_name'];
             $phone = $contactInfo['phone'];
+            $seminar_date = (new DateTime($contactInfo['seminar_date']))->format('F j, Y');
+            $seminar_start_time = (new DateTime($contactInfo['seminar_start_time']))->format('g:i A');
+            $seminar_end_time = (new DateTime($contactInfo['seminar_end_time']))->format('g:i A');
 
             // Send Email Notification
             try {
@@ -385,11 +439,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $mail->Subject = "Mass Wedding Schedule Confirmation";
                 $mail->Body = "
                 <div style='width: 100%; max-width: 400px; margin: auto; background: url(cid:background_img) no-repeat center center; background-size: cover; padding: 20px;'>
-                    <div style='background: rgba(255, 255, 255, 0.8); padding: 20px;width:100%;height:auto;'>
-                        Dear {$citizen_name},<br><br>Your mass wedding schedule for '{$title}' has been confirmed. ₱{$payableAmount}.00<br>Please make sure to pay the said amount in the church office on the day of your appointment.<br><br>Thank you.<br>
-                        <img src='cid:signature_img' style='width: 200px; height: auto;'>
-                    </div>
-                </div>";
+                            <div style='background: rgba(255, 255, 255, 0.8); padding: 20px; width:100%; height:auto;'>
+                                Dear {$citizen_name},<br><br>
+                                We are pleased to confirm your appointment for the event titled '<strong>{$title}</strong>'.<br><br>
+                                <strong>Details of Your Seminar Schedule:</strong><br>
+                                <ul>
+                                    <li><strong>Date:</strong> {$seminar_date}</li>
+                                    <li><strong>Time:</strong> {$seminar_start_time} to {$seminar_end_time}</li>
+                                    <li><strong>Amount Due:</strong> ₱{$payableAmount}.00</li>
+                                </ul>
+                                Please ensure to complete the payment at the church office on or before the day of your appointment or your Seminar.<br><br>
+                                We look forward to your participation and thank you for choosing Argao Parish Church.<br><br>
+                                Best regards,<br>
+                                <img src='cid:signature_img' style='width: 200px; height: auto;'>
+                            </div>
+                        </div>";
 
                 $mail->send();
             } catch (Exception $e) {
@@ -406,7 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $phone,
                     [
                         'from' => '+17082776875',
-                        'body' => "Dear {$citizen_name}, your appointment for '{$title}' has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
+                        'body' => "Dear {$citizen_name}, your appointment for '{$title}' on {$seminar_date} from {$seminar_start_time} to {$seminar_end_time} has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
                     ]
                 );
             } catch (Exception $e) {
@@ -627,13 +691,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $result = $appointment->approveConfirmation($confirmationfill_id);
 
     // Retrieve contact info and skip if email or phone is empty
-    $contactInfo = $appointment->getContactInfoAndTitles($confirmationfill_id);
+    $contactInfo = $appointment->getContactInfoAndTitless($confirmationfill_id);
 
     if (!empty($contactInfo['email']) && !empty($contactInfo['phone'])) {
         $email = $contactInfo['email'];
         $citizen_name = $contactInfo['fullname'];
         $title = $contactInfo['event_name'];
         $phone = $contactInfo['phone'];
+        $seminar_date = (new DateTime($contactInfo['seminar_date']))->format('F j, Y');
+        $seminar_start_time = (new DateTime($contactInfo['seminar_start_time']))->format('g:i A');
+        $seminar_end_time = (new DateTime($contactInfo['seminar_end_time']))->format('g:i A');
+
 
         // Send Email Notification
         try {
@@ -654,11 +722,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $mail->Subject = "Appointment Schedule Confirmation";
             $mail->Body = "
             <div style='width: 100%; max-width: 400px; margin: auto; background: url(cid:background_img) no-repeat center center; background-size: cover; padding: 20px;'>
-                <div style='background: rgba(255, 255, 255, 0.8); padding: 20px;width:100%;height:auto;'>
-                    Dear {$citizen_name},<br><br>Your appointment schedule for '{$title}' has been confirmed. ₱{$payableAmount}.00<br>Please make sure to pay the said amount in the church office on the day of your appointment.<br><br>Thank you.<br>
-                    <img src='cid:signature_img' style='width: 200px; height: auto;'>
-                </div>
-            </div>";
+            <div style='background: rgba(255, 255, 255, 0.8); padding: 20px; width:100%; height:auto;'>
+                Dear {$citizen_name},<br><br>
+                We are pleased to confirm your appointment for the event titled '<strong>{$title}</strong>'.<br><br>
+                <strong>Details of Your Seminar Schedule:</strong><br>
+                <ul>
+                    <li><strong>Date:</strong> {$seminar_date}</li>
+                    <li><strong>Time:</strong> {$seminar_start_time} to {$seminar_end_time}</li>
+                    <li><strong>Amount Due:</strong> ₱{$payableAmount}.00</li>
+                </ul>
+                Please ensure to complete the payment at the church office on or before the day of your appointment or your Seminar.<br><br>
+                We look forward to your participation and thank you for choosing Argao Parish Church.<br><br>
+                Best regards,<br>
+                <img src='cid:signature_img' style='width: 200px; height: auto;'>
+            </div>
+        </div>";
 
             $mail->send();
         } catch (Exception $e) {
@@ -675,8 +753,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $phone, // The recipient's phone number
                 [
                     'from' => '+17082776875', // Your Twilio phone number
-                    'body' => "Dear {$citizen_name}, your appointment for '{$title}' has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
-                ]
+                    'body' => "Dear {$citizen_name}, your appointment for '{$title}' on {$seminar_date} from {$seminar_start_time} to {$seminar_end_time} has been confirmed. ₱{$payableAmount}.00 is payable on the day of your appointment."
+                         ]
             );
         } catch (Exception $e) {
             echo "Error sending SMS notification: " . $e->getMessage();

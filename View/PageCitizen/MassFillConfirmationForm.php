@@ -201,7 +201,7 @@ small {
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">ConfirmationFill-up Form</div>
+                        <div class="card-title">MassConfirmationFill-up Form</div>
                     </div>
                     <div class="card-body">
                     <form method="post" action="../../Controller/citizen_con.php" onsubmit="return validateForm()">
@@ -389,7 +389,7 @@ small {
     </div>
     <div class="card-action">
         <button type="submit" name="submit" class="btn btn-success">Submit</button>
-        <a href="javascript:history.back()" class="btn btn-danger">Cancel</a>
+        <button type="button" class="btn btn-danger" onclick="window.location.href='CitizenPage.php'">Cancel</button>
         <button type="button" class="btn btn-info" onclick="clearForm()">Clear</button>
     </div>
 </form>

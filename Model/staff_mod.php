@@ -1122,11 +1122,18 @@ public function generateSeminarReport($eventType) {
                     c.fullname,
                     c.email, 
                     c.phone, 
-                    b.event_name 
+                    b.event_name,
+                    se.date AS seminar_date,
+                    se.start_time AS seminar_start_time,
+                    se.end_time AS seminar_end_time
                 FROM 
                     citizen c 
                 JOIN 
-                    baptismfill b ON c.citizend_id = b.citizen_id  
+                    baptismfill b ON c.citizend_id = b.citizen_id 
+                    LEFT JOIN
+                    announcement a ON a.announcement_id = b.announcement_id 
+                     LEFT JOIN
+                    schedule se ON a.seminar_id = se.schedule_id  
                 WHERE 
                     b.baptism_id = ?";
             $id = $massbaptismfillId;
@@ -1138,13 +1145,20 @@ public function generateSeminarReport($eventType) {
                     c.fullname,
                     c.email, 
                     c.phone, 
-                    b.event_name 
+                    b.event_name,
+                    se.date AS seminar_date,
+                    se.start_time AS seminar_start_time,
+                    se.end_time AS seminar_end_time
                 FROM 
                     citizen c 
                 JOIN 
                     schedule s ON c.citizend_id = s.citizen_id 
                 JOIN 
                     baptismfill b ON s.schedule_id = b.schedule_id 
+                    LEFT JOIN
+                    appointment_schedule a ON a.baptismfill_id = b.baptism_id 
+                LEFT JOIN
+                    schedule se ON a.schedule_id = se.schedule_id 
                 WHERE 
                     b.baptism_id = ?";
             $id = $baptismfillId;
@@ -1526,21 +1540,26 @@ public function displaySundaysDropdowns($schedule_id) {
         // Get Sundays between today and the schedule date
         $sundays = $this->getScheduleDays(date('Y-m-d'), $schedule_date);
         
-        // Define the fixed start and end times
-        $start_time = "08:00 AM";
-        $end_time = "5:00 PM";
+        // Define the fixed start and end times in 24-hour format
+        $start_time = "08:00:00"; // Example in HH:MM:SS format
+        $end_time = "17:00:00";   // Example in HH:MM:SS format
+        
+        // Convert start and end times to 12-hour format
+        $start_time = (new DateTime($start_time))->format('g:i A');
+        $end_time = (new DateTime($end_time))->format('g:i A');
 
         foreach ($sundays as $sunday) {
             // Combine values in the option for easier form processing later
             $option_value = "{$schedule_id}|{$sunday}|{$start_time}|{$end_time}";
 
-            // Display the date with the fixed time range
+            // Display the date with the converted time range
             echo "<option value='{$option_value}'>{$sunday} - {$start_time} to {$end_time}</option>";
         }
     } else {
         echo "<option>No available schedules found.</option>";
     }
 }
+
 //-----------------------------------------------------------------------------------------------
 // Method to get Sundays between start date and schedule date
 public function getSundays($startDate, $endDate) {
@@ -1871,6 +1890,38 @@ public function insertcAppointment($confirmationfill_id, $payableAmount) {
 
     $stmt->close();
 }
+public function getContactInfoAndTitless($confirmationfill_id) {
+    $sql = "SELECT 
+                c.fullname,
+                c.email, 
+                c.phone, 
+                cf.event_name,
+                se.date AS seminar_date,
+                    se.start_time AS seminar_start_time,
+                    se.end_time AS seminar_end_time
+            FROM 
+                citizen c 
+
+            JOIN 
+                confirmationfill cf ON c.citizend_id = cf.citizen_id 
+                LEFT JOIN
+                    announcement a ON a.announcement_id = cf.announcement_id 
+                     LEFT JOIN
+                    schedule se ON a.seminar_id = se.schedule_id  
+            WHERE 
+                cf.confirmationfill_id = ?";
+
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bind_param("i", $confirmationfill_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        return $result->fetch_assoc(); // Returns an associative array with email, phone, and event_name
+    } else {
+        return false; // Returns false if no contact info is found
+    }
+}
 public function getContactInfoAndTitles($confirmationfill_id) {
     $sql = "SELECT 
                 c.fullname,
@@ -1941,36 +1992,52 @@ public function getWeddingContactInfoAndTitles($weddingffill_id = null, $masswed
     if ($massweddingffill_id) {
         // Use the mass baptism fill ID
         $sql = "
-            SELECT 
-            c.citizend_id, 
-                c.fullname,
-                c.email, 
-                c.phone, 
-                mf.event_name 
-            FROM 
-                citizen c 
-            JOIN 
-                marriagefill mf ON c.citizend_id = mf.citizen_id  
-            WHERE 
-            mf.marriagefill_id = ?";
+        SELECT 
+        c.citizend_id, 
+            c.fullname,
+            c.email, 
+            c.phone, 
+            mf.event_name,
+            se.date AS seminar_date,
+            se.start_time AS seminar_start_time,
+            se.end_time AS seminar_end_time
+        FROM 
+            citizen c 
+        JOIN 
+            marriagefill mf ON c.citizend_id = mf.citizen_id  
+            LEFT JOIN
+            announcement a ON a.announcement_id = mf.announcement_id 
+             LEFT JOIN
+            schedule se ON a.seminar_id = se.schedule_id 
+     
+        WHERE 
+        mf.marriagefill_id = ?";
         $id = $massweddingffill_id;
     } elseif ($weddingffill_id) {
         // Use the baptism fill ID
         $sql = "
-       SELECT 
-       c.citizend_id, 
-                c.fullname,
-                c.email, 
-                c.phone, 
-                mf.event_name 
-            FROM 
-                citizen c 
-            JOIN 
-                schedule s ON c.citizend_id = s.citizen_id 
-            JOIN 
-                marriagefill mf ON s.schedule_id = mf.schedule_id 
-            WHERE 
-                mf.marriagefill_id = ?";
+        SELECT 
+        c.citizend_id, 
+        c.fullname,
+        c.email, 
+        c.phone, 
+        mf.event_name,
+        se.date AS seminar_date,
+        se.start_time AS seminar_start_time,
+        se.end_time AS seminar_end_time
+    FROM 
+        citizen c 
+    JOIN 
+        schedule s ON c.citizend_id = s.citizen_id 
+    JOIN 
+        marriagefill mf ON s.schedule_id = mf.schedule_id 
+    LEFT JOIN
+        appointment_schedule a ON a.marriage_id = mf.marriagefill_id 
+    LEFT JOIN
+        schedule se ON a.schedule_id = se.schedule_id 
+    WHERE 
+        mf.marriagefill_id = ?
+    ";
         $id = $weddingffill_id;
     }
 

@@ -202,7 +202,7 @@ document.getElementById('baptismForm').addEventListener('submit', function(event
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">Baptism Fill-up Form</div>
+                        <div class="card-title">MassBaptism Fill-up Form</div>
                     </div>
                     <div class="card-body">
                     <form method="post" action="../../Controller/citizen_con.php" onsubmit="return validateForm()">

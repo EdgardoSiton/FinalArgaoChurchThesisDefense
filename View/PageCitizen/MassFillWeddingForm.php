@@ -193,7 +193,7 @@ small {
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">WeddingFill-up Form</div>
+                        <div class="card-title">MassWeddingFill-up Form</div>
                     </div>
                     <div class="card-body">
                     <form method="post" action="../../Controller/citizen_con.php" onsubmit="return validateForm()">
@@ -416,7 +416,7 @@ small {
                             </div>
                             <div class="card-action">
                                 <button type="submit" class="btn btn-success">Submit</button>
-                                <button type="button" class="btn btn-danger" onclick="window.location.href='your_cancel_url.php'">Cancel</button>
+                                <button type="button" class="btn btn-danger" onclick="window.location.href='CitizenPage.php'">Cancel</button>
                                 <button type="button" class="btn btn-info" onclick="clearForm()">Clear</button>
                             </div>
                         </form>
