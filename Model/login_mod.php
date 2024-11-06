@@ -14,6 +14,125 @@ class User {
     public function __construct($conn) {
         $this->conn = $conn;
     }
+   
+    public function sendOTPs($email) {
+        // Retrieve citizend_id using checkEmailExistss()
+        $citizend_id = $this->checkEmailExistss($email);
+        if (!$citizend_id) {
+            return false; // Email not found, return false
+        }
+    
+        $otp = $this->generateOTP(); // Generate OTP
+        $subject = "Your OTP Code";
+        $body = "Your OTP code is: <strong>$otp</strong>. It is valid for 5 minutes.";
+    
+        // Call the insertOTP function with citizend_id
+        if ($this->insertOTP($citizend_id, $otp)) {
+            $_SESSION['citizend_id'] = $citizend_id; // Store citizend_id in session
+            return $this->sendEmails($email, $subject, $body); // Send email if OTP inserted
+        }
+        return false; // Return false if OTP insertion fails
+    }
+    
+    public function checkEmailExistss($email) {
+        $sql = "SELECT `citizend_id` FROM `citizen` WHERE `email` = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['citizend_id']; // Return citizend_id if email exists
+        } else {
+            return false; // Email does not exist
+        }
+    }
+    
+    public function insertOTP($citizend_id, $otp) {
+        $sql = "UPDATE `citizen` SET `otp_code` = ? WHERE `citizend_id` = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('si', $otp, $citizend_id);
+        return $stmt->execute(); // Execute and return success/failure
+    }
+    private function sendEmails($email, $subject, $body) {
+        try {
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host = "smtp.gmail.com";
+            $mail->SMTPAuth = true;
+            $mail->Username = "argaoparishchurch@gmail.com";
+            $mail->Password = "xomoabhlnrlzenur"; // Use your actual email password or app password
+            $mail->SMTPSecure = 'tls';
+            $mail->Port = 587;
+           
+            $mail->setFrom('argaoparishchurch@gmail.com');
+            $mail->addAddress($email);
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body = "<div style='width: 100%; max-width: 400px; margin: auto; padding: 20px;'>
+                           <div style='background: rgba(255, 255, 255, 0.8); padding: 20px;width:100%;height:auto;'>
+                               {$body}
+                           </div>
+                       </div>";
+            
+            return $mail->send();
+        } catch (Exception $e) {
+            error_log("Error sending email notification: " . $e->getMessage());
+            return false;
+        }
+    }
+    public function regenerateAndSendOTPs($email) {
+        // Retrieve citizend_id using checkEmailExistss()
+        $citizend_id = $this->checkEmailExistss($email);
+        if (!$citizend_id) {
+            return false; // Email not found, return false
+        }
+    
+        // Generate a new OTP
+        $otp = $this->generateOTP(); 
+        $subject = "Your New OTP Code";
+        $body = "Your new OTP code is: <strong>$otp</strong>. It is valid for 5 minutes.";
+        
+        // Update OTP in the database
+        if ($this->insertOTP($citizend_id, $otp)) {
+            // Store the new OTP and citizen ID in the session
+            $_SESSION['citizend_id'] = $citizend_id; 
+            return $this->sendEmails($email, $subject, $body); // Send email if OTP inserted
+        }
+        return false; // Return false if OTP insertion fails
+    }
+    
+    public function verifyOTPs($inputOtp) {
+        $sql = "SELECT `otp_code` FROM `citizen` WHERE `citizend_id` = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('i', $_SESSION['citizend_id']); // Assuming citizend_id is stored in session
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            // Debugging: log the OTP being checked
+            error_log("Input OTP: $inputOtp, Stored OTP: " . $row['otp_code']);
+            
+            if ($row['otp_code'] === $inputOtp) {
+                // OTP verified successfully
+                return true;
+            }
+        }
+        return false; // Invalid OTP
+    }
+    
+    
+    public function changePassword($citizend_id, $newPassword) {
+        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+        $sql = "UPDATE `citizen` SET `password` = ? WHERE `citizend_id` = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('si', $hashedPassword, $citizend_id);
+        return $stmt->execute(); // Execute and return success/failure
+    }
+    
+    
     public function archiveCitizen($citizen_id, $status) {
         // Use the status passed to either archive or unarchive
         $sql = "UPDATE citizen SET r_status = ? WHERE citizend_id = ?";
@@ -26,7 +145,7 @@ class User {
             return false;
         }
     }
-    
+
     
     
     public function getPriestAccount($statusFilter = '') {
@@ -355,7 +474,7 @@ class User {
 
     public function getUserInfo($email) {
         $email = mysqli_real_escape_string($this->conn, $email);
-        $query = "SELECT citizend_id, user_type, r_status, fullname, gender FROM citizen WHERE email = '$email'";
+        $query = "SELECT citizend_id, user_type, r_status, fullname, gender,valid_id FROM citizen WHERE email = '$email'";
         $result = mysqli_query($this->conn, $query);
         
         // Check if query was successful and fetch user info
@@ -367,6 +486,7 @@ class User {
                 'r_status' => $user['r_status'] ?? null,
                 'fullname' => $user['fullname'] ?? null,
                 'gender' => $user['gender'] ?? null,
+                'valid_id' => $user['valid_id'] ?? null,
             ];
         } else {
             return null;
@@ -386,7 +506,7 @@ class User {
             return false; // Indicate failure
         }
     }
-    private function generateOTP($length = 6) {
+    public function generateOTP($length = 6) {
         return random_int(100000, 999999); // Generates a random 6-digit number
     }
     
@@ -596,6 +716,32 @@ if ($stmt->execute()) {
         $data['c_date_birth'] = "$year-$month-$day";
     
         // Sanitize input data
+        if (isset($_FILES['valid_id'])) {
+            $validIdError = $_FILES['valid_id']['error'];
+            $validIdTmpName = $_FILES['valid_id']['tmp_name'];
+            $validIdName = $_FILES['valid_id']['name'];
+            $validIdUploadPath = 'img/' . $validIdName;
+    
+            // Proceed with file upload if no error
+            if ($validIdError === 0) {
+                $imageFileType = strtolower(pathinfo($validIdName, PATHINFO_EXTENSION));
+                $allowedFileTypes = ['jpg', 'jpeg', 'png', 'gif'];
+    
+                if (in_array($imageFileType, $allowedFileTypes)) {
+                    if (move_uploaded_file($validIdTmpName, $validIdUploadPath)) {
+                        $data['valid_id'] = $validIdUploadPath; // Save the image path in data
+                    } else {
+                        return "Failed to upload valid ID image";
+                    }
+                } else {
+                    return "Only JPG, JPEG, PNG, and GIF files are allowed for valid ID";
+                }
+            } else {
+                return "Error uploading valid ID image";
+            }
+        } else {
+            return "No valid ID image uploaded";
+        }
         $sanitizedData = $this->sanitizeData($data);
     
         // Calculate age
@@ -605,13 +751,13 @@ if ($stmt->execute()) {
         $sanitizedData['password'] = password_hash($sanitizedData['password'], PASSWORD_DEFAULT);
     
         // Prepare SQL query with placeholders
-        $query = "INSERT INTO citizen (user_type, r_status, fullname, address, gender, c_date_birth, age, email, phone, password) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $query = "INSERT INTO citizen (user_type, r_status, fullname, address, gender, c_date_birth, age, email, phone, password,valid_id) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
     
         // Use prepared statements to prevent SQL injection
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param(
-            'ssssssssss',
+            'sssssssssss',
             $sanitizedData['user_type'],
             $sanitizedData['r_status'],
             $sanitizedData['fullname'],
@@ -621,7 +767,8 @@ if ($stmt->execute()) {
             $sanitizedData['age'],
             $sanitizedData['email'],
             $sanitizedData['phone'],
-            $sanitizedData['password']
+            $sanitizedData['password'],
+            $sanitizedData['valid_id']
         );
     
         if ($stmt->execute()) {
@@ -648,6 +795,32 @@ if ($stmt->execute()) {
         $data['c_date_birth'] = "$year-$month-$day";
     
         // Sanitize input data
+        if (isset($_FILES['valid_id'])) {
+            $validIdError = $_FILES['valid_id']['error'];
+            $validIdTmpName = $_FILES['valid_id']['tmp_name'];
+            $validIdName = $_FILES['valid_id']['name'];
+            $validIdUploadPath = 'img/' . $validIdName;
+    
+            // Proceed with file upload if no error
+            if ($validIdError === 0) {
+                $imageFileType = strtolower(pathinfo($validIdName, PATHINFO_EXTENSION));
+                $allowedFileTypes = ['jpg', 'jpeg', 'png', 'gif'];
+    
+                if (in_array($imageFileType, $allowedFileTypes)) {
+                    if (move_uploaded_file($validIdTmpName, $validIdUploadPath)) {
+                        $data['valid_id'] = $validIdUploadPath; // Save the image path in data
+                    } else {
+                        return "Failed to upload valid ID image";
+                    }
+                } else {
+                    return "Only JPG, JPEG, PNG, and GIF files are allowed for valid ID";
+                }
+            } else {
+                return "Error uploading valid ID image";
+            }
+        } else {
+            return "No valid ID image uploaded";
+        }
         $sanitizedData = $this->sanitizeData($data);
     
         // Calculate age
@@ -657,13 +830,13 @@ if ($stmt->execute()) {
         $sanitizedData['password'] = password_hash($sanitizedData['password'], PASSWORD_DEFAULT);
     
         // Prepare SQL query with placeholders
-        $query = "INSERT INTO citizen (user_type, r_status, fullname, address, gender, c_date_birth, age, email, phone, password) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $query = "INSERT INTO citizen (user_type, r_status, fullname, address, gender, c_date_birth, age, email, phone, password,valid_id) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
     
         // Use prepared statements to prevent SQL injection
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param(
-            'ssssssssss',
+            'sssssssssss',
             $sanitizedData['user_type'],
             $sanitizedData['r_status'],
             $sanitizedData['fullname'],
@@ -673,7 +846,8 @@ if ($stmt->execute()) {
             $sanitizedData['age'],
             $sanitizedData['email'],
             $sanitizedData['phone'],
-            $sanitizedData['password']
+            $sanitizedData['password'],
+            $sanitizedData['valid_id']
         );
     
         if ($stmt->execute()) {
@@ -704,18 +878,7 @@ if ($stmt->execute()) {
         $result = mysqli_query($this->conn, $query);
         return mysqli_num_rows($result) > 0;
     }
-    public function checkEmailExistss($email) {
-        $sql = "SELECT `citizend_id`, `fullname`, `email` FROM `citizen` WHERE `email` = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('s', $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
 
-        if ($result->num_rows > 0) {
-            return true; // Email exists
-        } else {
-            return false; // Email does not exist
-        }
-    }
+    
 }
 ?>

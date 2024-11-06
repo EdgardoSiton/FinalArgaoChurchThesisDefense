@@ -322,7 +322,46 @@ gap:25px;
         display: none;
     }
 }
+.tooltip-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    margin-left: 5px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+    font-size: 12px;
+    line-height: 18px;
+    cursor: pointer;
+    position: relative;
+}
+.tooltip-image-container {
+  display: none; /* Hidden by default */
+  position: absolute;
+  top: 50%; /* Center align vertically */
+  right: 110%; /* Position to the left */
+  transform: translateY(-50%); /* Center align vertically */
+  background-color: #fff;
+  padding: 5px;
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  white-space: nowrap; /* Keep images in one line */
+}
 
+/* Tooltip image styling */
+.tooltip-image {
+  width: 50px; /* Adjust size as needed */
+  height: auto;
+  margin-right: 5px;
+}
+
+/* Show the tooltip images on hover */
+.tooltip-icon:hover .tooltip-image-container {
+  display: flex; /* Align images in a row */
+  align-items: center;
+}
     </style>
     </head>
 
@@ -363,7 +402,7 @@ gap:25px;
                 <input type="checkbox" id="check" />
                 <label for="check">Remember me</label>
               </span>
-              <a href="#" class="forgot_pw">Forgot password?</a>
+              <a href="forgotstep1.php">Forgot your password?</a> <!-- Updated link -->
             </div>
             <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Sign In</button>
             <div class="login_signup">Don't have an account? <a href="#"   id="sign-up-signbutton">Signup</a></div>
@@ -448,10 +487,21 @@ gap:25px;
   <div class="error" id="c_date_birth_error"></div>
   </div>
   <div class="input_group" style=" margin-top: -8px;"> 
-    <label for="validID">Valid ID</label>
-    <input type="file" class="form-control" id="valid_id" name="valid_id" accept="image/*" placeholder="Valid ID">
-    <div class="error" id="valid_id_error"></div>
+  <label for="validID">Valid ID
+  <div class="tooltip-icon">i
+    <div class="tooltip-image-container">
+      <img src="../../Controller/postalid.webp" alt="Tooltip image" class="tooltip-image">
+      <img src="../../Controller/driversid.jpg" alt="Tooltip image" class="tooltip-image">
+      <img src="../../Controller/nationalid.png" alt="Tooltip image" class="tooltip-image">
+    </div>
   </div>
+</label>
+<input type="file" class="form-control" id="valid_id" name="valid_id" accept="image/*" placeholder="Valid ID">
+<div class="error" id="valid_id_error"></div>
+
+
+  </div>
+
 </div>
 
             <div class="input_box">
@@ -519,6 +569,26 @@ gap:25px;
 
     <script src="app.js"></script>
     <script>
+      document.addEventListener('DOMContentLoaded', function() {
+    const tooltipIcons = document.querySelectorAll('.tooltip-icon');
+
+    tooltipIcons.forEach(icon => {
+        icon.addEventListener('click', function() {
+            const tooltipContainer = this.nextElementSibling;
+            tooltipContainer.classList.toggle('show');
+        });
+    });
+
+    // Optional: Hide tooltip when clicking outside
+    document.addEventListener('click', function(e) {
+        tooltipIcons.forEach(icon => {
+            const tooltipContainer = icon.nextElementSibling;
+            if (!icon.contains(e.target) && !tooltipContainer.contains(e.target)) {
+                tooltipContainer.classList.remove('show');
+            }
+        });
+    });
+});
       document.getElementById("sign-up-signbutton").addEventListener("click", function() {
     document.querySelector(".sign-in-form").style.display = "none";
     document.querySelector(".sign-up-form").style.display = "block";

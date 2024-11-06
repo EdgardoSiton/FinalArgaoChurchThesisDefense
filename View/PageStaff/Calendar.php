@@ -37,6 +37,10 @@
 .purple {
   background-color: grey;
 }
+.maroon {
+  background-color: maroon;
+}
+
 
 </style>
 
@@ -80,10 +84,31 @@ try {
     }
 
     // Mass Events
-    foreach ($massEvents as $event) {
+    
+   ?>
+   <?php
+foreach ($addcalendar as $event) {
+ 
+        ?>
+        {
+            eventName: '<?php echo $event['cal_fullname']; ?>',
+            startTime: '<?php echo $event['cal_Category']; ?>',
+            endTime: '<?php echo $event['cal_description']; ?>',
+            calendar: 'Events in Church',
+            color: 'maroon',
+            date: '<?php echo $event['cal_date']; ?>'
+        },
+        <?php 
+    } 
+ 
+?>
+
+    // Marriage Events
+    <?php
+     foreach ($massEvents as $event) {
     ?>
     {
-        eventName: '<?php echo $event['title']; ?>',
+      eventName: '<?php echo $event['title']; ?>',
         startTime: '<?php echo convertTo12HourFormat($event['start_time']); ?>',
         endTime: '<?php echo convertTo12HourFormat($event['end_time']); ?>',
         calendar: 'Announcement Event',
@@ -91,33 +116,6 @@ try {
         date: '<?php echo $event['date']; ?>'
     },
     <?php } ?>
-   <?php
-foreach ($addcalendar as $event) {
-    // Extract month and day from the event date
-    $eventDate = new DateTime($event['cal_date']);
-    $month = $eventDate->format('m');
-    $day = $eventDate->format('d');
-    
-    // Loop through each year
-    for ($year = 2024; $year <= 2100; $year++) { // Adjust the range as needed
-        // Format the new date
-        $newDate = sprintf('%04d-%02d-%02d', $year, $month, $day);
-        ?>
-        {
-            eventName: '<?php echo $event['cal_fullname']; ?>',
-            startTime: '<?php echo $event['cal_Category']; ?>',
-            endTime: '<?php echo $event['cal_description']; ?>',
-            calendar: 'Events in Church',
-            color: 'blue',
-            date: '<?php echo $newDate; ?>'
-        },
-        <?php 
-    } 
-} 
-?>
-
-    // Marriage Events
-
     
     <?php
     foreach ($requestformEvents as $event) {
@@ -470,21 +468,38 @@ foreach ($addcalendar as $event) {
     }
 
     Calendar.prototype.drawLegend = function() {
-      var legend = createElement('div', 'legend');
-      var calendars = this.events.map(function(e) {
-        return e.calendar + '|' + e.color;
-      }).reduce(function(memo, e) {
-        if (memo.indexOf(e) === -1) {
-          memo.push(e);
-        }
-        return memo;
-      }, []).forEach(function(e) {
-        var parts = e.split('|');
-        var entry = createElement('span', 'entry ' + parts[1], parts[0]);
-        legend.appendChild(entry);
-      });
-      this.el.appendChild(legend);
+    // Clear the existing legend if it exists
+    let existingLegend = document.querySelector('.legend');
+    if (existingLegend) {
+        existingLegend.remove();
     }
+    
+
+    // Create the legend container
+    var legend = createElement('div', 'legend');
+
+    // Define the legend items with their colors
+    var legends = [
+        { color: 'blue', label: 'Baptism' },
+        { color: 'maroon', label: 'Events in Church' },
+        { color: 'orange', label: 'Marriage' },
+        { color: 'green', label: 'Confirmation' },
+        { color: 'yellow', label: 'Defuctom' },
+        { color: 'pink', label: 'Mass' },
+        { color: 'purple', label: 'Request Form' },
+    ];
+
+    // Append each legend item
+    legends.forEach(function(legendItem) {
+        var entry = createElement('span', 'legend-item');
+        entry.innerHTML = `<span class="legend-color ${legendItem.color}"></span> ${legendItem.label}`;
+        legend.appendChild(entry);
+    });
+
+    // Append the new legend to the calendar container
+    this.el.appendChild(legend);
+}
+
 
     Calendar.prototype.nextMonth = function() {
       this.current.add('months', 1);

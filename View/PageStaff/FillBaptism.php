@@ -11,6 +11,7 @@ $startTime = $_SESSION['startTime'] ?? null;
 $endTime = $_SESSION['endTime'] ?? null;
 
 // Assuming you're storing session data for the user's name and citizen ID
+$email = $_SESSION['email'];
 $nme = $_SESSION['fullname'];
 $regId = $_SESSION['citizend_id'];
 

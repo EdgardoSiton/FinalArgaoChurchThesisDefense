@@ -233,7 +233,11 @@ small {
             </div>
         </div>
         <div class="col-md-6 col-lg-4">
-   
+        <div class="form-group">
+        <label for="validID">Valid ID</label>
+    <input type="file" class="form-control" id="valid_id" name="valid_id" accept="image/*" placeholder="Valid ID">
+    <div class="error" id="valid_id_error"></div>
+            </div>
             <div class="form-group">
                 <label for="parents_residence">Password</label>
                 <input type="password" class="form-control" id="passwords" name="password" placeholder="Password">
@@ -248,7 +252,7 @@ small {
     </div>
 
     <div class="card-action">
-    <button type="submit" class="button" >Register</button>
+    <button type="submit" class="btn btn-success" >Register</button>
           </div>
 </form>
                     </div>

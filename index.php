@@ -442,6 +442,20 @@ We invite you to check back regularly to stay updated on the vibrant life of our
     ></a>
     <link rel="stylesheet" href="View/PageLanding/assets/css/login.css" />
     <script>
+       document.addEventListener('DOMContentLoaded', function() {
+    <?php
+    if (isset($_SESSION['status']) && $_SESSION['status'] == 'successs') { // Fixed 'successs' to 'success'
+        echo "Swal.fire({
+            icon: 'success',
+            title: 'Password Changed Successfully!',
+            text: 'Your password has been updated. You can now log in with your new password.',
+            confirmButtonText: 'Okay'
+        });";
+        unset($_SESSION['status']);
+    }
+    ?>
+});
+
             document.addEventListener('DOMContentLoaded', function() {
     <?php
     if (isset($_SESSION['status']) && $_SESSION['status'] == 'success') {

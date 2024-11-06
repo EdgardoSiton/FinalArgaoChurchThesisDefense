@@ -1,8 +1,6 @@
 <?php
 session_start();
-$email = $_SESSION['email'];
-$nme = $_SESSION['fullname'];
-$regId = $_SESSION['citizend_id'];
+
 require_once '../../Model/staff_mod.php';
 require_once '../../Model/db_connection.php';
 require_once '../../Model/citizen_mod.php';

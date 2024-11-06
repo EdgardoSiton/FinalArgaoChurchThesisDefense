@@ -157,13 +157,13 @@ if ($r_status === "Admin") {
               <div class="card-body">
                 <div class="d-flex flex-column align-items-center text-center">
                   <img
-                    src="assets/img/profile.png"
+                    src="../PageLanding/<?php echo ($citizenDetails['valid_id']); ?>"
                     alt="Citizen"
-                    class="rounded-circle"
-                    width="180"
+                    class="square"
+                    width="270"
                   />
                   <div class="mb-0">
-                    <h4> <?php echo htmlspecialchars($nme); ?></h4>
+                    <h4>   <?php echo htmlspecialchars($citizenDetails['fullname']); ?></h4>
                     <p  class="text-muted font-size-sm">
                     <?php echo htmlspecialchars($citizenDetails['address']); ?>
                     </p>
@@ -183,7 +183,7 @@ if ($r_status === "Admin") {
                     <h6 class="mb-0">Full Name</h6>
                 </div>
                 <div class="col-sm-6 text-secondary editable">
-                    <?php echo htmlspecialchars($nme); ?>
+                    <?php echo htmlspecialchars($citizenDetails['fullname']); ?>
                 </div>
                 <div class="col-sm-3 text-right">
                    

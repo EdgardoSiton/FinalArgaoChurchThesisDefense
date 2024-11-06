@@ -5,6 +5,32 @@ require_once __DIR__ . '/../Model/login_mod.php';
 session_start(); // Start the session
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST['forgot_password_form'])) {
+        $email = $_POST['email'];
+        $user = new User($conn);
+    
+        // Check if the email exists in the database and get citizend_id
+        $citizend_id = $user->checkEmailExistss($email);
+        if ($citizend_id) {
+            // Send OTP to the email
+            if ($user->sendOTPs($email)) {  // sendOTPs handles OTP generation, insertion, and email sending
+                $_SESSION['otp_email'] = $email;
+             
+                header('Location: ../../View/PageLanding/otp_verification.php'); // Redirect to OTP verification page
+                exit;
+            } else {
+                $_SESSION['login_error'] = 'Failed to send OTP. Please try again.';
+                header('Location: ../../View/PageLanding/forgotstep1.php'); // Redirect back to the forgot password page
+                exit;
+            }
+        } else {
+            // Email not found
+            $_SESSION['login_error'] = 'This email address is not registered.';
+            header('Location: ../../View/PageLanding/forgotstep1.php'); // Redirect back to the forgot password page
+            exit;
+        }
+    }
+    
     if (isset($_POST['login_form'])) {
    
         $email = $_POST['email'];
@@ -23,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $regId = $userInfo['citizend_id']; 
                 $nme = $userInfo['fullname'];
                 $gender = $userInfo['gender'];
-                
+                $valid_id = $userInfo['valid_id'];
                 // Store user info in session
                 $_SESSION['email'] = $email;
                 $_SESSION['user_type'] = $accountType;
@@ -31,6 +57,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['citizend_id'] = $regId; 
                 $_SESSION['fullname'] = $nme;
                 $_SESSION['gender'] = $gender;
+                $_SESSION['valid_id'] = $valid_id;
     
                 // Redirect based on the account type and status
                 if ($accountType === 'Citizen') {

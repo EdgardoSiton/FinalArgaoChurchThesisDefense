@@ -347,7 +347,7 @@ gap:25px;
                 <input type="checkbox" id="check" />
                 <label for="check">Remember me</label>
               </span>
-              <a href="#" class="forgot_pw">Forgot password?</a>
+              <a href="forgotstep1.php">Forgot your password?</a> <!-- Updated link -->
             </div>
             <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Sign In</button>
             <div class="login_signup">Don't have an account? <a href="#"   id="sign-in-signbutton">Signup</a></div>

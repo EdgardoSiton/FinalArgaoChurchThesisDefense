@@ -1,6 +1,12 @@
 <?php
 require_once '../../Model/staff_mod.php';
 require_once '../../Model/db_connection.php';
+require_once '../../Model/login_mod.php';
+$email = $_SESSION['email'];
+$nme = $_SESSION['fullname'];
+$regId = $_SESSION['citizend_id'];
+$citizenInfo = new User ($conn);
+$citizenDetails = $citizenInfo->getCitizenDetails($regId);
 $userManager = new Staff($conn);
 // Use $userManager to call the methods
 $recentCitizenUpdates = $userManager->getRecentCitizenUpdates();
@@ -51,6 +57,7 @@ if ($r_status === "Admin") {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
     <!-- Fonts and icons -->
     <script src="../assets/js/plugin/webfont/webfont.min.js"></script>
+    
     <script>
       WebFont.load({
         google: { families: ["Public Sans:300,400,500,600,700"] },
@@ -296,14 +303,18 @@ if ($r_status === "Admin") {
                   <ul class="dropdown-menu dropdown-user animated fadeIn">
                     <div class="dropdown-user-scroll scrollbar-outer">
                       <li>
-                        <div class="user-box">
-                          <div class="avatar-lg">
-                            <img
-                              src="assets/img/profile.jpg"
-                              alt="image profile"
-                              class="avatar-img rounded"
-                            />
-                          </div>
+                      <div class="user-box">
+      <div class="avatar-lg">
+      
+          <img
+            src="../PageAdmin/<?php echo htmlspecialchars($citizenDetails['valid_id']); ?>" 
+            alt=""
+            class="avatar-img rounded"
+          />
+   
+         
+ 
+      </div>
                           <div class="u-text">
                             <h4>Church Staff</h4>
                             <p class="text-muted"><?php echo $email; ?></p>
