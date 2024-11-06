@@ -1777,7 +1777,7 @@ public function insertIntoWalkinBaptismFill($scheduleId, $fatherFullname, $fulln
     }
 }
 
-public function insertMassAppointment($massbaptismfillId = null ,$massweddingffill_id = null , $payableAmount ) {
+public function insertMassAppointment($massbaptismfillId = null ,$massweddingffill_id = null , $payableAmount = 0 ) {
     // Generate a random 12-letter reference number
     $referenceNumber = $this->generateReferenceNumber();
 

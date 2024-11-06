@@ -1,6 +1,6 @@
 <?php 
 require_once '../../Controller/login_con.php';
-
+session_start(); // Start the session
 // Prevent browser from caching the login page
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0"); // HTTP 1.1.
 header("Pragma: no-cache"); // HTTP 1.0.

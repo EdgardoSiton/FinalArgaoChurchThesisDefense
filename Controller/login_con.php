@@ -1,8 +1,9 @@
 <?php
+ob_start(); // Start output buffering
+session_start(); // Start the session at the beginning
 require_once __DIR__ . '/../Model/db_connection.php';
 require_once __DIR__ . '/../Model/login_mod.php';
 
-session_start(); // Start the session
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['forgot_password_form'])) {
