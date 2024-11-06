@@ -304,7 +304,7 @@ public function generateSeminarReport($eventType) {
         $sqlBaptism = "
             UPDATE priest_approval pa
            
-            SET pa.pr_status = NULL, pa.priest_id = NULL
+            SET pa.pr_status = '', pa.priest_id = NULL
             WHERE pa.pr_status = 'Pending'
             AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
@@ -313,7 +313,7 @@ public function generateSeminarReport($eventType) {
         $sqlConfirmation = "
         UPDATE priest_approval pa
            
-        SET pa.pr_status = NULL, pa.priest_id = NULL
+        SET pa.pr_status = '', pa.priest_id = NULL
         WHERE pa.pr_status = 'Pending'
         AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
@@ -322,7 +322,7 @@ public function generateSeminarReport($eventType) {
         $sqlMarriage = "
         UPDATE priest_approval pa
            
-        SET pa.pr_status = NULL, pa.priest_id = NULL
+        SET pa.pr_status = '', pa.priest_id = NULL
         WHERE pa.pr_status = 'Pending'
         AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
@@ -331,7 +331,7 @@ public function generateSeminarReport($eventType) {
         $sqlDefuctom = "
         UPDATE priest_approval pa
            
-        SET pa.pr_status = NULL, pa.priest_id = NULL
+        SET pa.pr_status = '', pa.priest_id = NULL
         WHERE pa.pr_status = 'Pending'
         AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
@@ -340,7 +340,7 @@ public function generateSeminarReport($eventType) {
         $sqlRequestForm = "
         UPDATE priest_approval pa
            
-        SET pa.pr_status = NULL, pa.priest_id = NULL
+        SET pa.pr_status = '', pa.priest_id = NULL
         WHERE pa.pr_status = 'Pending'
         AND (pa.assigned_time < NOW() - INTERVAL 24 HOUR);
         ";
