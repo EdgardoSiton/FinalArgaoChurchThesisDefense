@@ -26,18 +26,23 @@ class Locale extends Constraint
 {
     public const NO_SUCH_LOCALE_ERROR = 'a0af4293-1f1a-4a1c-a328-979cba6182a2';
 
-    protected static $errorNames = [
+    protected const ERROR_NAMES = [
         self::NO_SUCH_LOCALE_ERROR => 'NO_SUCH_LOCALE_ERROR',
     ];
+
+    /**
+     * @deprecated since Symfony 6.1, use const ERROR_NAMES instead
+     */
+    protected static $errorNames = self::ERROR_NAMES;
 
     public $message = 'This value is not a valid locale.';
     public $canonicalize = true;
 
     public function __construct(
-        array $options = null,
-        string $message = null,
-        bool $canonicalize = null,
-        array $groups = null,
+        ?array $options = null,
+        ?string $message = null,
+        ?bool $canonicalize = null,
+        ?array $groups = null,
         mixed $payload = null
     ) {
         if (!class_exists(Locales::class)) {

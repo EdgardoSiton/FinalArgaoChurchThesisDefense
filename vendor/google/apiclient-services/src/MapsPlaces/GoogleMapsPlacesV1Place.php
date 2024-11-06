@@ -24,6 +24,8 @@ class GoogleMapsPlacesV1Place extends \Google\Collection
   protected $accessibilityOptionsDataType = '';
   protected $addressComponentsType = GoogleMapsPlacesV1PlaceAddressComponent::class;
   protected $addressComponentsDataType = 'array';
+  protected $addressDescriptorType = GoogleMapsPlacesV1AddressDescriptor::class;
+  protected $addressDescriptorDataType = '';
   /**
    * @var string
    */
@@ -82,6 +84,8 @@ class GoogleMapsPlacesV1Place extends \Google\Collection
    * @var bool
    */
   public $goodForWatchingSports;
+  protected $googleMapsLinksType = GoogleMapsPlacesV1PlaceGoogleMapsLinks::class;
+  protected $googleMapsLinksDataType = '';
   /**
    * @var string
    */
@@ -253,6 +257,20 @@ class GoogleMapsPlacesV1Place extends \Google\Collection
   public function getAddressComponents()
   {
     return $this->addressComponents;
+  }
+  /**
+   * @param GoogleMapsPlacesV1AddressDescriptor
+   */
+  public function setAddressDescriptor(GoogleMapsPlacesV1AddressDescriptor $addressDescriptor)
+  {
+    $this->addressDescriptor = $addressDescriptor;
+  }
+  /**
+   * @return GoogleMapsPlacesV1AddressDescriptor
+   */
+  public function getAddressDescriptor()
+  {
+    return $this->addressDescriptor;
   }
   /**
    * @param string
@@ -519,6 +537,20 @@ class GoogleMapsPlacesV1Place extends \Google\Collection
   public function getGoodForWatchingSports()
   {
     return $this->goodForWatchingSports;
+  }
+  /**
+   * @param GoogleMapsPlacesV1PlaceGoogleMapsLinks
+   */
+  public function setGoogleMapsLinks(GoogleMapsPlacesV1PlaceGoogleMapsLinks $googleMapsLinks)
+  {
+    $this->googleMapsLinks = $googleMapsLinks;
+  }
+  /**
+   * @return GoogleMapsPlacesV1PlaceGoogleMapsLinks
+   */
+  public function getGoogleMapsLinks()
+  {
+    return $this->googleMapsLinks;
   }
   /**
    * @param string

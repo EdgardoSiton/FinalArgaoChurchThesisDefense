@@ -36,6 +36,8 @@ class ClusterUpdate extends \Google\Collection
   protected $desiredCompliancePostureConfigDataType = '';
   protected $desiredContainerdConfigType = ContainerdConfig::class;
   protected $desiredContainerdConfigDataType = '';
+  protected $desiredControlPlaneEndpointsConfigType = ControlPlaneEndpointsConfig::class;
+  protected $desiredControlPlaneEndpointsConfigDataType = '';
   protected $desiredCostManagementConfigType = CostManagementConfig::class;
   protected $desiredCostManagementConfigDataType = '';
   protected $desiredDatabaseEncryptionType = DatabaseEncryption::class;
@@ -44,6 +46,10 @@ class ClusterUpdate extends \Google\Collection
    * @var string
    */
   public $desiredDatapathProvider;
+  /**
+   * @var bool
+   */
+  public $desiredDefaultEnablePrivateNodes;
   protected $desiredDefaultSnatStatusType = DefaultSnatStatus::class;
   protected $desiredDefaultSnatStatusDataType = '';
   protected $desiredDnsConfigType = DNSConfig::class;
@@ -64,6 +70,8 @@ class ClusterUpdate extends \Google\Collection
    * @var bool
    */
   public $desiredEnablePrivateEndpoint;
+  protected $desiredEnterpriseConfigType = DesiredEnterpriseConfig::class;
+  protected $desiredEnterpriseConfigDataType = '';
   protected $desiredFleetType = Fleet::class;
   protected $desiredFleetDataType = '';
   protected $desiredGatewayApiConfigType = GatewayAPIConfig::class;
@@ -288,6 +296,20 @@ class ClusterUpdate extends \Google\Collection
     return $this->desiredContainerdConfig;
   }
   /**
+   * @param ControlPlaneEndpointsConfig
+   */
+  public function setDesiredControlPlaneEndpointsConfig(ControlPlaneEndpointsConfig $desiredControlPlaneEndpointsConfig)
+  {
+    $this->desiredControlPlaneEndpointsConfig = $desiredControlPlaneEndpointsConfig;
+  }
+  /**
+   * @return ControlPlaneEndpointsConfig
+   */
+  public function getDesiredControlPlaneEndpointsConfig()
+  {
+    return $this->desiredControlPlaneEndpointsConfig;
+  }
+  /**
    * @param CostManagementConfig
    */
   public function setDesiredCostManagementConfig(CostManagementConfig $desiredCostManagementConfig)
@@ -328,6 +350,20 @@ class ClusterUpdate extends \Google\Collection
   public function getDesiredDatapathProvider()
   {
     return $this->desiredDatapathProvider;
+  }
+  /**
+   * @param bool
+   */
+  public function setDesiredDefaultEnablePrivateNodes($desiredDefaultEnablePrivateNodes)
+  {
+    $this->desiredDefaultEnablePrivateNodes = $desiredDefaultEnablePrivateNodes;
+  }
+  /**
+   * @return bool
+   */
+  public function getDesiredDefaultEnablePrivateNodes()
+  {
+    return $this->desiredDefaultEnablePrivateNodes;
   }
   /**
    * @param DefaultSnatStatus
@@ -412,6 +448,20 @@ class ClusterUpdate extends \Google\Collection
   public function getDesiredEnablePrivateEndpoint()
   {
     return $this->desiredEnablePrivateEndpoint;
+  }
+  /**
+   * @param DesiredEnterpriseConfig
+   */
+  public function setDesiredEnterpriseConfig(DesiredEnterpriseConfig $desiredEnterpriseConfig)
+  {
+    $this->desiredEnterpriseConfig = $desiredEnterpriseConfig;
+  }
+  /**
+   * @return DesiredEnterpriseConfig
+   */
+  public function getDesiredEnterpriseConfig()
+  {
+    return $this->desiredEnterpriseConfig;
   }
   /**
    * @param Fleet
